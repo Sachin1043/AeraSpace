@@ -53,3 +53,9 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
+
+# Frontend build output
+aeraspace/public/frontend/
+aeraspace/www/aeraspace.html
+frontend/src/types/
+node_modules

@@ -262,3 +262,27 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+# Single-page app
+# ---------------
+
+website_route_rules = [
+	{"from_route": "/aeraspace/<path:app_path>", "to_route": "aeraspace"},
+]
+
+doc_events = {
+	"User": {
+		"on_update": "aeraspace.api.directory.create_profile_for_user",
+	},
+}
+
+after_install = "aeraspace.install.after_install"
+after_migrate = "aeraspace.install.after_migrate"
+
+has_permission = {
+	"AS Channel": "aeraspace.permissions.channel_has_permission",
+}
+
+permission_query_conditions = {
+	"AS Channel": "aeraspace.permissions.channel_query_conditions",
+}
