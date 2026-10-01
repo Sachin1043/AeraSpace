@@ -72,9 +72,12 @@ def get_channel(channel: str):
 	doc.members = frappe.get_all(
 		"AS Channel Member",
 		filters={"channel": channel},
-		fields=["user", "role"],
+		fields=["user", "role", "last_read_at"],
 		order_by="creation asc",
 	)
+	for m in doc.members:
+		# read receipts compare this with message creation times
+		m.last_read_at = str(m.last_read_at) if m.last_read_at else None
 	doc.is_member = bool(member)
 	doc.my_role = member.role if member else None
 	doc.pinned_count = frappe.db.count("AS Message", {"channel": channel, "is_pinned": 1, "is_deleted": 0})
@@ -428,4 +431,11 @@ def _set_last_read(channel: str, user: str, timestamp):
 		"last_read_at",
 		timestamp,
 		update_modified=False,
+	)
+	# lets senders turn their ticks blue (read receipts)
+	publish_to_channel(
+		channel,
+		"as_read",
+		{"channel": channel, "user": user, "last_read_at": str(timestamp)},
+		exclude=user,
 	)

@@ -26,6 +26,11 @@
 					label="Description (optional)"
 				/>
 				<FormControl
+					v-model="form.client"
+					label="Client (optional)"
+					placeholder="e.g. GK Exports"
+				/>
+				<FormControl
 					v-model="form.visibility"
 					type="select"
 					label="Visibility"
@@ -75,6 +80,7 @@ const blank = () => ({
 	project_key: "",
 	description: "",
 	visibility: "Private",
+	client: "",
 	members: [],
 });
 const form = reactive(blank());

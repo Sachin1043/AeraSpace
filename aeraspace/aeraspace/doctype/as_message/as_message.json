@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 0,
  "autoname": "hash",
- "creation": "2026-09-29 19:52:42.925808",
+ "creation": "2026-09-29 21:40:50.950109",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -135,7 +135,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-29 19:52:42.925808",
+ "modified": "2026-09-29 21:40:50.950109",
  "modified_by": "Administrator",
  "module": "AeraSpace",
  "name": "AS Message",

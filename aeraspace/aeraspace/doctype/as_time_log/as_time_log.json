@@ -7,7 +7,11 @@
  "engine": "InnoDB",
  "field_order": [
   "user",
-  "message"
+  "log_date",
+  "project",
+  "task",
+  "minutes",
+  "description"
  ],
  "fields": [
   {
@@ -16,16 +20,41 @@
    "in_list_view": 1,
    "label": "User",
    "options": "User",
-   "reqd": 1,
-   "search_index": 1
+   "reqd": 1
   },
   {
-   "fieldname": "message",
+   "fieldname": "log_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Message",
-   "options": "AS Message",
+   "in_standard_filter": 1,
+   "label": "Project",
+   "options": "AS Project",
    "reqd": 1
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "AS Task"
+  },
+  {
+   "fieldname": "minutes",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Minutes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
   }
  ],
  "index_web_pages_for_search": 0,
@@ -33,7 +62,7 @@
  "modified": "2026-09-29 21:40:50.950109",
  "modified_by": "Administrator",
  "module": "AeraSpace",
- "name": "AS Bookmark",
+ "name": "AS Time Log",
  "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [

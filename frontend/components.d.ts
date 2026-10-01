@@ -16,6 +16,7 @@ declare module 'vue' {
     CreateTaskDialog: typeof import('./src/components/CreateTaskDialog.vue')['default']
     EmojiPicker: typeof import('./src/components/EmojiPicker.vue')['default']
     FilesDialog: typeof import('./src/components/FilesDialog.vue')['default']
+    LogTimeDialog: typeof import('./src/components/LogTimeDialog.vue')['default']
     MessageItem: typeof import('./src/components/MessageItem.vue')['default']
     MessageList: typeof import('./src/components/MessageList.vue')['default']
     NewMessageDialog: typeof import('./src/components/NewMessageDialog.vue')['default']
@@ -32,6 +33,7 @@ declare module 'vue' {
     TaskDialog: typeof import('./src/components/TaskDialog.vue')['default']
     ThreadPanel: typeof import('./src/components/ThreadPanel.vue')['default']
     TopBar: typeof import('./src/components/TopBar.vue')['default']
+    UpdateCard: typeof import('./src/components/UpdateCard.vue')['default']
     UserAvatar: typeof import('./src/components/UserAvatar.vue')['default']
   }
 }

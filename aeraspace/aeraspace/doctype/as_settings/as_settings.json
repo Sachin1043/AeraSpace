@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-09-29 21:40:50.950109",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_eod",
+  "eod_channel",
+  "eod_reminder_time",
+  "working_days"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_eod",
+   "fieldtype": "Section Break",
+   "label": "EOD / Daily updates"
+  },
+  {
+   "description": "Optional. Submitted updates are also posted to this channel.",
+   "fieldname": "eod_channel",
+   "fieldtype": "Link",
+   "label": "Post EOD updates to channel",
+   "options": "AS Channel"
+  },
+  {
+   "default": "18:30:00",
+   "description": "People who haven't submitted by this time get a reminder.",
+   "fieldname": "eod_reminder_time",
+   "fieldtype": "Time",
+   "label": "Reminder time"
+  },
+  {
+   "default": "Mon,Tue,Wed,Thu,Fri",
+   "description": "Comma separated: Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+   "fieldname": "working_days",
+   "fieldtype": "Data",
+   "label": "Working days"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-29 21:40:50.950109",
+ "modified_by": "Administrator",
+ "module": "AeraSpace",
+ "name": "AS Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

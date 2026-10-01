@@ -3,9 +3,18 @@
 		<div v-if="loading && hasMore" class="flex justify-center py-2">
 			<LoadingIndicator class="size-4" />
 		</div>
-		<div v-if="!hasMore && intro" class="mb-6 mt-8 px-2">
-			<div class="text-lg font-semibold text-ink-gray-9">👋 Say hello</div>
-			<div class="text-base text-ink-gray-6">{{ intro }}</div>
+		<!-- shown only until the first real message; system notices don't count -->
+		<div v-if="showIntro" class="mb-6 mt-8 px-2">
+			<button
+				v-if="greeting"
+				class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-lg font-semibold text-ink-gray-9 hover:border-outline-gray-3 hover:bg-surface-gray-2"
+				:title="`Send “${greeting}”`"
+				@click="$emit('say-hello', greeting)"
+			>
+				👋 Say hello
+			</button>
+			<div v-else class="text-lg font-semibold text-ink-gray-9">👋 Say hello</div>
+			<div class="mt-1 text-base text-ink-gray-6">{{ intro }}</div>
 		</div>
 
 		<template v-for="row in rows" :key="row.key">
@@ -24,6 +33,7 @@
 				:can-post-top-level="canPostTopLevel"
 				:is-admin="isAdmin"
 				:highlighted="row.message.name === highlight"
+				:readers="readers"
 				@open-thread="(m) => $emit('open-thread', m)"
 				@reply="(m) => $emit('reply', m)"
 				@create-task="(m) => $emit('create-task', m)"
@@ -46,13 +56,21 @@ const props = defineProps({
 	hasMore: Boolean,
 	loading: Boolean,
 	intro: String,
+	greeting: String, // message the "Say hello" button sends; empty = not clickable
+	readers: { type: Array, default: () => [] }, // for read receipts on my messages
 	inThread: Boolean,
 	canInteract: { type: Boolean, default: true },
 	canPostTopLevel: { type: Boolean, default: true },
 	isAdmin: Boolean,
 	highlight: String,
 });
-defineEmits(["open-thread", "reply", "create-task"]);
+defineEmits(["open-thread", "reply", "create-task", "say-hello"]);
+
+// once anyone has written (even if it was later deleted) the conversation has started
+const showIntro = computed(
+	() =>
+		!props.hasMore && !!props.intro && !props.messages.some((m) => m.message_type !== "System")
+);
 
 const chat = useChat();
 const scroller = ref(null);

@@ -227,6 +227,18 @@
 							:disabled="!task.can_edit"
 							@blur="save('labels')"
 						/>
+						<div class="border-t pt-3">
+							<div class="mb-1.5 text-xs text-ink-gray-5">Time logged</div>
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-base font-medium text-ink-gray-9">{{
+									formatDuration(task.logged_minutes)
+								}}</span>
+								<Button v-if="task.can_edit" size="sm" @click="showLogTime = true">
+									<template #prefix><LucideTimer class="size-3.5" /></template>
+									Log time
+								</Button>
+							</div>
+						</div>
 						<div class="space-y-1 border-t pt-3 text-xs text-ink-gray-5">
 							<div>
 								Reporter:
@@ -248,9 +260,18 @@
 			</div>
 		</template>
 	</Dialog>
+	<LogTimeDialog
+		v-if="task"
+		v-model="showLogTime"
+		:defaults="{ project: task.project, task: task.name }"
+		@saved="load"
+	/>
 </template>
 
 <script setup>
+import LogTimeDialog from "./LogTimeDialog.vue";
+import { formatDuration } from "@/utils/duration";
+import LucideTimer from "~icons/lucide/timer";
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { Button, Dialog, FormControl, LoadingIndicator, call, dayjsLocal } from "frappe-ui";
 import { showError, useChat } from "@/stores/chat";
@@ -275,6 +296,7 @@ const chat = useChat();
 const task = ref(null);
 const draft = reactive({});
 const editingDescription = ref(false);
+const showLogTime = ref(false);
 const picker = ref(null);
 const uploading = ref(false);
 const uploadProgress = ref(0);

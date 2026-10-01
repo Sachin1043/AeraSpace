@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 0,
  "autoname": "field:project_key",
- "creation": "2026-09-29 19:52:42.925808",
+ "creation": "2026-09-29 21:40:50.950109",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -12,6 +12,7 @@
   "visibility",
   "column_break_project",
   "lead",
+  "client",
   "channel",
   "last_task_number",
   "section_description",
@@ -62,6 +63,12 @@
    "options": "User"
   },
   {
+   "fieldname": "client",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Client"
+  },
+  {
    "fieldname": "channel",
    "fieldtype": "Link",
    "label": "Channel",
@@ -88,7 +95,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-29 19:52:42.925808",
+ "modified": "2026-09-29 21:40:50.950109",
  "modified_by": "Administrator",
  "module": "AeraSpace",
  "name": "AS Project",
