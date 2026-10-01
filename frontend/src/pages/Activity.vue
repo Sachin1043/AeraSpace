@@ -109,6 +109,7 @@ const icons = {
 	Invite: "➕",
 	Assignment: "📋",
 	"Task Update": "🔄",
+	Reminder: "⏰",
 };
 
 const items = createResource({ url: "aeraspace.api.notifications.get_notifications", auto: true });
@@ -129,6 +130,7 @@ const visible = computed(() =>
 );
 
 function title(n) {
+	if (n.notification_type === "Reminder") return n.preview;
 	const from = chat.person(n.from_user).full_name;
 	const where =
 		n.channel_type === "Direct"

@@ -49,6 +49,13 @@ export const useChat = defineStore("chat", () => {
 	const bookmarks = ref(new Set());
 	const activeChannel = ref(null);
 	const activeThread = ref(null);
+	const readMarks = reactive({}); // channel -> { user: last_read_at } for read receipts
+
+	function setReadMarks(channel, members) {
+		readMarks[channel] = Object.fromEntries(
+			(members || []).map((m) => [m.user, m.last_read_at])
+		);
+	}
 	const unreadNotifications = ref(0);
 	const profileUser = ref(null); // whose profile panel is open
 	const notificationPermission = ref(
@@ -532,6 +539,7 @@ export const useChat = defineStore("chat", () => {
 	}
 
 	function notificationTitle(n) {
+		if (n.notification_type === "Reminder") return `⏰ ${n.preview}`;
 		const from = person(n.from_user).full_name;
 		const entry = sidebarEntry(n.channel);
 		const where =
@@ -554,6 +562,7 @@ export const useChat = defineStore("chat", () => {
 	}
 
 	function notificationRoute(n) {
+		if (n.notification_type === "Reminder") return { name: "EOD" };
 		if (n.task)
 			return {
 				name: "Project",
@@ -652,6 +661,9 @@ export const useChat = defineStore("chat", () => {
 			({ user, state }) => user !== session.user && (presence.value[user] = state)
 		);
 		socket.on("as_profile_update", () => loadPeople());
+		socket.on("as_read", ({ channel, user, last_read_at }) => {
+			if (readMarks[channel]) readMarks[channel][user] = last_read_at;
+		});
 		socket.on("as_notify", onNotify);
 		socket.on("as_task_update", emitTask("update"));
 		socket.on("as_task_delete", emitTask("delete"));
@@ -699,6 +711,8 @@ export const useChat = defineStore("chat", () => {
 		bookmarks,
 		activeChannel,
 		activeThread,
+		readMarks,
+		setReadMarks,
 		unreadNotifications,
 		notificationPermission,
 		totalUnread,

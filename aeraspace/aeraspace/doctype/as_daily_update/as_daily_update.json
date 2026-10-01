@@ -7,7 +7,12 @@
  "engine": "InnoDB",
  "field_order": [
   "user",
-  "message"
+  "update_date",
+  "completed",
+  "in_progress",
+  "blockers",
+  "tomorrow",
+  "posted_message"
  ],
  "fields": [
   {
@@ -20,12 +25,39 @@
    "search_index": 1
   },
   {
-   "fieldname": "message",
-   "fieldtype": "Link",
+   "fieldname": "update_date",
+   "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Message",
+   "label": "Date",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "completed",
+   "fieldtype": "Long Text",
+   "label": "Completed"
+  },
+  {
+   "fieldname": "in_progress",
+   "fieldtype": "Long Text",
+   "label": "In progress"
+  },
+  {
+   "fieldname": "blockers",
+   "fieldtype": "Long Text",
+   "label": "Blockers"
+  },
+  {
+   "fieldname": "tomorrow",
+   "fieldtype": "Long Text",
+   "label": "Tomorrow"
+  },
+  {
+   "fieldname": "posted_message",
+   "fieldtype": "Link",
+   "label": "Posted message",
    "options": "AS Message",
-   "reqd": 1
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,
@@ -33,7 +65,7 @@
  "modified": "2026-09-29 21:40:50.950109",
  "modified_by": "Administrator",
  "module": "AeraSpace",
- "name": "AS Bookmark",
+ "name": "AS Daily Update",
  "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
@@ -53,5 +85,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "user",
  "track_changes": 0
 }

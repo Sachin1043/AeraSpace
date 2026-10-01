@@ -181,6 +181,21 @@
 			</template>
 		</div>
 
+		<!-- read receipt on my own messages: ✓ sent, ✓✓ (blue) seen -->
+		<div
+			v-if="receipt"
+			class="flex w-5 shrink-0 items-end justify-end pb-0.5"
+			:title="receipt.title"
+			:aria-label="receipt.title"
+		>
+			<LucideClock v-if="receipt.state === 'sending'" class="size-3.5 text-ink-gray-4" />
+			<LucideCheckCheck
+				v-else-if="receipt.state === 'read'"
+				class="size-4 text-ink-blue-3"
+			/>
+			<LucideCheck v-else class="size-4 text-ink-gray-4" />
+		</div>
+
 		<!-- hover toolbar -->
 		<div
 			v-if="!message.is_deleted && !message.pending && !editing"
@@ -263,8 +278,11 @@
 </template>
 
 <script setup>
+import LucideCheck from "~icons/lucide/check";
+import LucideCheckCheck from "~icons/lucide/check-check";
+import LucideClock from "~icons/lucide/clock";
 import { computed, nextTick, ref } from "vue";
-import { Dialog, Dropdown, dayjsLocal, toast } from "frappe-ui";
+import { Dialog, Dropdown, dayjs, dayjsLocal, toast } from "frappe-ui";
 import { useChat } from "@/stores/chat";
 import { session } from "@/session";
 import { fileExtension, formatSize, isImage, renderMarkdown, plainText } from "@/utils/format";
@@ -285,6 +303,7 @@ const props = defineProps({
 	canPostTopLevel: { type: Boolean, default: true },
 	isAdmin: Boolean,
 	highlighted: Boolean,
+	readers: { type: Array, default: () => [] }, // other members: [{ user, last_read_at }]
 });
 const emit = defineEmits(["open-thread", "reply", "create-task"]);
 
@@ -310,6 +329,37 @@ const reactionList = computed(() =>
 	Object.entries(props.message.reactions || {}).filter(([, users]) => users.length)
 );
 const isMine = computed(() => props.message.sender === session.user);
+
+// read receipts: seen once every other member has read past this message
+const receipt = computed(() => {
+	const m = props.message;
+	if (!isMine.value || m.message_type === "System" || m.is_deleted || m.failed) return null;
+	if (m.pending) return { state: "sending", title: "Sending…" };
+	if (props.inThread || !props.readers.length) return null;
+	const sent = dayjs(m.creation);
+	const seenBy = props.readers.filter(
+		(r) => r.last_read_at && !dayjs(r.last_read_at).isBefore(sent)
+	);
+	if (seenBy.length === props.readers.length) {
+		const who =
+			props.readers.length === 1
+				? ""
+				: `: ${seenBy.map((r) => chat.person(r.user).full_name).join(", ")}`;
+		return {
+			state: "read",
+			title: `Seen${props.readers.length === 1 ? "" : " by everyone"}${who}`,
+		};
+	}
+	if (seenBy.length) {
+		return {
+			state: "sent",
+			title: `Seen by ${seenBy.length} of ${props.readers.length}: ${seenBy
+				.map((r) => chat.person(r.user).full_name)
+				.join(", ")}`,
+		};
+	}
+	return { state: "sent", title: "Sent" };
+});
 
 // notices like "Sachin K S joined" read "You joined" for the person who did it
 const systemText = computed(() => {

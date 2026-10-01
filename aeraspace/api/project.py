@@ -27,7 +27,7 @@ PROJECT_FIELDS = [
 	"channel",
 	"creation",
 ]
-EDITABLE = ("project_name", "description", "status", "lead")
+EDITABLE = ("project_name", "description", "status", "lead", "client")
 
 
 def get_project_or_throw(project: str):
@@ -119,6 +119,7 @@ def create_project(
 	visibility: str = "Private",
 	members=None,
 	lead: str | None = None,
+	client: str | None = None,
 ):
 	me = require_login()
 	if visibility not in ("Private", "Public"):
@@ -132,6 +133,7 @@ def create_project(
 			"description": description,
 			"visibility": visibility,
 			"lead": lead or me,
+			"client": (client or "").strip() or None,
 		}
 	).insert(ignore_permissions=True)
 

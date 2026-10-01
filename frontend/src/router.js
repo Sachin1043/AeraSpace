@@ -44,6 +44,16 @@ const routes = [
 		component: () => import("@/pages/Tasks.vue"),
 	},
 	{
+		path: "/eod",
+		name: "EOD",
+		component: () => import("@/pages/Eod.vue"),
+	},
+	{
+		path: "/timesheets",
+		name: "Timesheets",
+		component: () => import("@/pages/Timesheets.vue"),
+	},
+	{
 		path: "/search",
 		name: "Search",
 		component: () => import("@/pages/Search.vue"),

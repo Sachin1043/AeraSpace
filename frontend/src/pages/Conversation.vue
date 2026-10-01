@@ -77,6 +77,8 @@
 				:has-more="convo.hasMore"
 				:loading="convo.loading"
 				:intro="intro"
+				:greeting="greeting"
+				:readers="readers"
 				:can-interact="!!details?.is_member"
 				:can-post-top-level="canPost"
 				:is-admin="isAdmin"
@@ -85,6 +87,7 @@
 				@open-thread="openThread"
 				@reply="(m) => (replyTo = m)"
 				@create-task="startTask"
+				@say-hello="(text) => chat.send(channel, text)"
 			/>
 			<div v-else class="flex flex-1 items-center justify-center">
 				<LoadingIndicator class="size-5" />
@@ -324,6 +327,17 @@ const intro = computed(() => {
 	return `This is the very beginning of #${title.value}.`;
 });
 
+// what the "Say hello" button sends (only where you can post)
+const greeting = computed(() => {
+	if (!details.value?.is_member || !canPost.value) return "";
+	if (details.value.channel_type === "Direct") {
+		return partner.value && partner.value !== session.user
+			? `Hello ${chat.person(partner.value).full_name} 👋`
+			: "";
+	}
+	return "Hello everyone 👋";
+});
+
 function typingNames(users) {
 	const names = users.map((u) => chat.person(u).full_name.split(" ")[0]);
 	if (!names.length) return "";
@@ -367,7 +381,15 @@ const menu = computed(() => {
 
 async function loadDetails() {
 	details.value = await call("aeraspace.api.chat.get_channel", { channel: props.channel });
+	chat.setReadMarks(props.channel, details.value.members);
 }
+
+// everyone else in the conversation, with how far they've read (kept live by as_read events)
+const readers = computed(() =>
+	Object.entries(chat.readMarks[props.channel] || {})
+		.filter(([user]) => user !== session.user)
+		.map(([user, last_read_at]) => ({ user, last_read_at }))
+);
 
 async function open() {
 	chat.activeChannel = props.channel;

@@ -177,3 +177,24 @@ class TestChat(IntegrationTestCase):
 		with self.set_user(self.alice):
 			self.assertRaises(frappe.ValidationError, update_my_profile, availability="Sleeping")
 			update_my_profile(availability="Auto")
+
+	def test_read_receipts(self):
+		from unittest.mock import patch
+
+		with self.set_user(self.alice):
+			dm = chat.get_or_create_dm(self.bob)
+			sent = chat.send_message(dm, "did you see this?")
+			bob = next(m for m in chat.get_channel(dm).members if m.user == self.bob)
+		# bob hasn't opened the chat since the message was sent
+		self.assertTrue(not bob.last_read_at or bob.last_read_at < sent["creation"])
+
+		with self.set_user(self.bob), patch("aeraspace.api.chat.publish_to_channel") as publish:
+			chat.mark_read(dm)
+		event, payload = publish.call_args.args[1], publish.call_args.args[2]
+		self.assertEqual(event, "as_read")
+		self.assertEqual(payload["user"], self.bob)
+		self.assertEqual(publish.call_args.kwargs["exclude"], self.bob)  # only the others need to know
+
+		with self.set_user(self.alice):
+			bob = next(m for m in chat.get_channel(dm).members if m.user == self.bob)
+		self.assertGreaterEqual(bob.last_read_at, sent["creation"])

@@ -122,6 +122,8 @@ import LucideBookmark from "~icons/lucide/bookmark";
 import LucidePlus from "~icons/lucide/plus";
 import LucideFolderKanban from "~icons/lucide/folder-kanban";
 import LucideListTodo from "~icons/lucide/list-todo";
+import LucideClipboardCheck from "~icons/lucide/clipboard-check";
+import LucideTimer from "~icons/lucide/timer";
 import LucideBell from "~icons/lucide/bell";
 
 const chat = useChat();
@@ -143,6 +145,8 @@ const navItems = [
 	{ label: "Saved", route: "/saved", icon: LucideBookmark },
 	{ label: "Projects", route: "/projects", icon: LucideFolderKanban },
 	{ label: "Tasks", route: "/tasks", icon: LucideListTodo },
+	{ label: "EOD", route: "/eod", icon: LucideClipboardCheck },
+	{ label: "Timesheets", route: "/timesheets", icon: LucideTimer },
 ];
 
 function hide() {

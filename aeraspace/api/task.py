@@ -140,6 +140,9 @@ def get_task(task: str):
 			order_by="creation asc",
 		)
 	]
+	payload.logged_minutes = frappe.db.sql(
+		"select coalesce(sum(minutes), 0) from `tabAS Time Log` where task = %s", task
+	)[0][0]
 	if row.source_message:
 		source = frappe.db.get_value(
 			"AS Message", row.source_message, ["channel", "thread_root"], as_dict=True

@@ -286,3 +286,9 @@ has_permission = {
 permission_query_conditions = {
 	"AS Channel": "aeraspace.permissions.channel_query_conditions",
 }
+
+scheduler_events = {
+	"cron": {
+		"*/15 * * * *": ["aeraspace.tasks.eod_reminders"],
+	},
+}
