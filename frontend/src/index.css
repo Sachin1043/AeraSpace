@@ -1,1 +1,28 @@
 @import 'frappe-ui/style.css';
+
+/*
+ * Light theme with more depth. frappe-ui's light grays sit very close to white
+ * (#F8F8F8 / #F3F3F3 / #EDEDED), so panels, borders, hovers and the selected
+ * item barely stand out. These steps give light mode the same layering the
+ * dark theme has. Dark mode is untouched.
+ */
+:root[data-theme='light'] {
+	/* surfaces: page < sidebar/panels < hover < pressed */
+	--surface-white: #ffffff;
+	--surface-gray-1: #f2f3f5;
+	--surface-gray-2: #e8eaed;
+	--surface-gray-3: #dcdfe3;
+	--surface-gray-4: #c8ccd2;
+	--surface-menu-bar: #f2f3f5;
+	--surface-selected: #ffffff;
+
+	/* borders: visible on white and on the gray sidebar */
+	--outline-gray-1: #e0e3e7;
+	--outline-gray-2: #cfd3d9;
+	--outline-gray-3: #b4b9c0;
+	--outline-gray-modals: #e0e3e7;
+
+	/* secondary text a touch darker so hints and timestamps stay readable */
+	--text-ink-gray-4: #8a8f96;
+	--text-ink-gray-5: #6b7079;
+}

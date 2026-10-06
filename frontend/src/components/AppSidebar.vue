@@ -1,5 +1,6 @@
 <template>
 	<aside class="flex h-full w-60 shrink-0 flex-col border-r bg-surface-gray-1">
+		<CheckInToggle />
 		<div class="flex-1 overflow-y-auto px-2 pb-4 pt-2">
 			<nav class="space-y-0.5">
 				<router-link
@@ -110,6 +111,7 @@ import { sidebarCollapsed } from "@/layout";
 import SidebarSection from "./SidebarSection.vue";
 import SidebarItem from "./SidebarItem.vue";
 import PresenceDot from "./PresenceDot.vue";
+import CheckInToggle from "./CheckInToggle.vue";
 import LucidePanelLeftClose from "~icons/lucide/panel-left-close";
 import CreateChannelDialog from "./CreateChannelDialog.vue";
 import NewMessageDialog from "./NewMessageDialog.vue";

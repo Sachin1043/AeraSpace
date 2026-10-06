@@ -35,13 +35,19 @@ import AppSidebar from "@/components/AppSidebar.vue";
 import TopBar from "@/components/TopBar.vue";
 import ProfileDrawer from "@/components/ProfileDrawer.vue";
 import { showError, useChat } from "@/stores/chat";
+import { useAttendance } from "@/stores/attendance";
 import { sidebarCollapsed } from "@/layout";
 import { session } from "@/session";
 import LucideChevronRight from "~icons/lucide/chevron-right";
 
 const chat = useChat();
+const attendance = useAttendance();
 const topBar = ref(null);
-onMounted(() => session.isLoggedIn && chat.init().catch(showError));
+onMounted(async () => {
+	if (!session.isLoggedIn) return;
+	await chat.init().catch(showError);
+	attendance.init().catch(showError);
+});
 
 function showSidebar() {
 	sidebarCollapsed.value = false;

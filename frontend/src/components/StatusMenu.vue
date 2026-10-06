@@ -21,6 +21,48 @@
 					</div>
 					<div class="text-sm text-ink-gray-5">{{ me.email || session.user }}</div>
 
+					<!-- live work clock while checked in -->
+					<template v-if="attendance.enabled">
+						<div
+							v-if="attendance.state !== 'out'"
+							class="mt-2 flex items-center gap-2 rounded-full px-3 py-1 text-sm"
+							:class="
+								onBreak
+									? 'bg-surface-amber-2 text-ink-amber-3'
+									: 'bg-surface-green-2 text-ink-green-3'
+							"
+							:title="`${onBreak ? 'On break' : 'Working'} since ${
+								attendance.sinceTime
+							}`"
+						>
+							<span
+								class="size-2 animate-pulse rounded-full"
+								:class="onBreak ? 'bg-[#f5a623]' : 'bg-[#2ecc71]'"
+							/>
+							<span class="text-xs">{{ onBreak ? "On break" : "Working" }}</span>
+							<span class="font-mono font-semibold tabular-nums">{{
+								formatClock(
+									onBreak ? attendance.runningSeconds : attendance.workedSeconds
+								)
+							}}</span>
+						</div>
+						<!-- checked out: today's final worked time -->
+						<div
+							v-else-if="attendance.data.today.first_in"
+							class="mt-2 flex items-center gap-2 rounded-full bg-surface-gray-2 px-3 py-1 text-sm text-ink-gray-6"
+							:title="`Worked today · last check-out at ${attendance.time(
+								attendance.data.today.last_out
+							)}`"
+						>
+							<span class="size-2 rounded-full bg-surface-gray-5" />
+							<span class="text-xs">Checked out</span>
+							<span class="font-mono font-semibold tabular-nums">{{
+								formatClock(attendance.workedSeconds)
+							}}</span>
+						</div>
+						<div v-else class="mt-2 text-xs text-ink-gray-5">Checked out</div>
+					</template>
+
 					<!-- the one current status -->
 					<button
 						class="mt-3 flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-base hover:bg-surface-gray-1"
@@ -175,6 +217,8 @@ import { useChat } from "@/stores/chat";
 import { session } from "@/session";
 import { setTheme, theme } from "@/theme";
 import { CUSTOM_STATUSES, DEFAULT_STATUSES } from "@/utils/status";
+import { useAttendance } from "@/stores/attendance";
+import { formatClock } from "@/utils/clock";
 import UserAvatar from "./UserAvatar.vue";
 import PresenceDot from "./PresenceDot.vue";
 import LucideChevronDown from "~icons/lucide/chevron-down";
@@ -187,6 +231,8 @@ import LucideBell from "~icons/lucide/bell";
 import LucideLogOut from "~icons/lucide/log-out";
 
 const chat = useChat();
+const attendance = useAttendance();
+const onBreak = computed(() => attendance.state === "break");
 const choosing = ref(false);
 const me = computed(() => chat.person(session.user));
 const themes = [
