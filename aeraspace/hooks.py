@@ -274,6 +274,10 @@ doc_events = {
 	"User": {
 		"on_update": "aeraspace.api.directory.create_profile_for_user",
 	},
+	"Employee Checkin": {
+		"validate": "aeraspace.hr.protect_checkin",
+		"on_trash": "aeraspace.hr.protect_checkin",
+	},
 }
 
 after_install = "aeraspace.install.after_install"

@@ -9,6 +9,9 @@ def after_install():
 
 def after_migrate():
 	ensure_role()
+	from aeraspace.hr import link_all_users
+
+	link_all_users()  # no-op until ERPNext + HRMS are installed and set up
 
 
 def ensure_role():

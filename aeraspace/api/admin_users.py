@@ -161,6 +161,10 @@ def _update_profile(user, values):
 	profile = get_or_create_profile(user)
 	profile.update(values)
 	profile.save(ignore_permissions=True)
+
+	from aeraspace.hr import ensure_employee
+
+	ensure_employee(user)  # creates the Employee for new users, syncs details for existing ones
 	frappe.publish_realtime("as_profile_update", {"user": user}, after_commit=True)
 
 

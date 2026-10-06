@@ -3,6 +3,8 @@
 		<h1 class="text-2xl font-semibold text-ink-gray-9">Welcome, {{ session.fullName }} 👋</h1>
 		<p class="mt-2 text-base text-ink-gray-6">One Space. Everyone Connected.</p>
 
+		<TodayAttendance class="mt-8" />
+
 		<div class="mt-8 grid gap-3 sm:grid-cols-3">
 			<router-link
 				v-for="card in cards"
@@ -84,6 +86,7 @@
 import { computed } from "vue";
 import { createResource } from "frappe-ui";
 import TaskCard from "@/components/TaskCard.vue";
+import TodayAttendance from "@/components/TodayAttendance.vue";
 import { useChat } from "@/stores/chat";
 import { session } from "@/session";
 import LucideUsers from "~icons/lucide/users";

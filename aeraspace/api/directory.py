@@ -69,6 +69,9 @@ def update_my_profile(**values):
 	profile.update(values)
 	profile.save(ignore_permissions=True)
 
+	from aeraspace.hr import sync_employee
+
+	sync_employee(user)
 	frappe.publish_realtime("as_profile_update", {"user": user}, after_commit=True)
 	if "availability" in values and (was_invisible or profile.availability == "Invisible"):
 		# going invisible looks like signing off; coming back looks like signing in
@@ -88,6 +91,11 @@ def create_profile_for_user(doc, method=None):
 	"""User.on_update hook: every desk user gets a directory profile (also after gaining a desk role)."""
 	if doc.user_type == "System User" and not frappe.db.exists("AS Employee Profile", doc.name):
 		frappe.get_doc({"doctype": "AS Employee Profile", "user": doc.name}).insert(ignore_permissions=True)
+
+	# every AeraSpace user is also an HRMS Employee (attendance, leave, timesheets)
+	from aeraspace.hr import ensure_employee
+
+	ensure_employee(doc.name)
 
 
 PHOTO_EXTENSIONS = ("png", "jpg", "jpeg", "webp", "gif")
