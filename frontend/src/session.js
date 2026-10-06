@@ -10,8 +10,14 @@ export const session = {
 	get image() {
 		return window.user_image;
 	},
+	get isLoggedIn() {
+		return !!window.session_user && window.session_user !== "Guest";
+	},
+	get isAdmin() {
+		return !!window.is_admin;
+	},
 	async logout() {
 		await frappeRequest({ url: "/api/method/logout" });
-		window.location.href = "/login?redirect-to=/aeraspace";
+		window.location.href = "/aeraspace/login";
 	},
 };

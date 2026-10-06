@@ -115,6 +115,24 @@
 					>
 						<LucideUser class="size-4" /> My profile
 					</button>
+					<button
+						v-if="session.isAdmin"
+						class="menu-row"
+						@click="
+							close();
+							$router.push({ name: 'AdminUsers' });
+						"
+					>
+						<LucideUsers class="size-4" />
+						<span class="flex-1">Users</span>
+						<span
+							v-if="chat.pendingResets"
+							class="rounded-full bg-red-500 px-1.5 text-2xs font-medium leading-4 text-white"
+							:title="`${chat.pendingResets} password reset request(s) waiting`"
+						>
+							{{ chat.pendingResets }}
+						</span>
+					</button>
 					<div class="flex items-center gap-3 px-4 py-1.5 text-base text-ink-gray-7">
 						<LucideSunMoon class="size-4" />
 						<span class="flex-1">Theme</span>
@@ -141,9 +159,6 @@
 					>
 						<LucideBell class="size-4" /> Enable desktop notifications
 					</button>
-					<a class="menu-row" href="/app"
-						><LucideSettings class="size-4" /> Admin (Desk)</a
-					>
 					<button class="menu-row text-ink-red-4" @click="session.logout()">
 						<LucideLogOut class="size-4" /> Log out
 					</button>
@@ -166,9 +181,9 @@ import LucideChevronDown from "~icons/lucide/chevron-down";
 import LucideCheck from "~icons/lucide/check";
 import LucidePencil from "~icons/lucide/pencil";
 import LucideUser from "~icons/lucide/user";
+import LucideUsers from "~icons/lucide/users";
 import LucideSunMoon from "~icons/lucide/sun-moon";
 import LucideBell from "~icons/lucide/bell";
-import LucideSettings from "~icons/lucide/settings";
 import LucideLogOut from "~icons/lucide/log-out";
 
 const chat = useChat();

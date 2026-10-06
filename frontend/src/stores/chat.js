@@ -50,6 +50,12 @@ export const useChat = defineStore("chat", () => {
 	const activeChannel = ref(null);
 	const activeThread = ref(null);
 	const readMarks = reactive({}); // channel -> { user: last_read_at } for read receipts
+	const pendingResets = ref(0); // admins: forgotten-password requests waiting for approval
+
+	async function loadPendingResets() {
+		if (!session.isAdmin) return;
+		pendingResets.value = await call(`${API}.admin_users.pending_reset_count`).catch(() => 0);
+	}
 
 	function setReadMarks(channel, members) {
 		readMarks[channel] = Object.fromEntries(
@@ -540,6 +546,7 @@ export const useChat = defineStore("chat", () => {
 
 	function notificationTitle(n) {
 		if (n.notification_type === "Reminder") return `⏰ ${n.preview}`;
+		if (n.notification_type === "Password Reset") return `🔑 ${n.preview}`;
 		const from = person(n.from_user).full_name;
 		const entry = sidebarEntry(n.channel);
 		const where =
@@ -563,6 +570,8 @@ export const useChat = defineStore("chat", () => {
 
 	function notificationRoute(n) {
 		if (n.notification_type === "Reminder") return { name: "EOD" };
+		if (n.notification_type === "Password Reset")
+			return { name: "AdminUsers", query: { tab: "requests" } };
 		if (n.task)
 			return {
 				name: "Project",
@@ -661,6 +670,7 @@ export const useChat = defineStore("chat", () => {
 			({ user, state }) => user !== session.user && (presence.value[user] = state)
 		);
 		socket.on("as_profile_update", () => loadPeople());
+		socket.on("as_reset_requests", () => loadPendingResets());
 		socket.on("as_read", ({ channel, user, last_read_at }) => {
 			if (readMarks[channel]) readMarks[channel][user] = last_read_at;
 		});
@@ -696,6 +706,7 @@ export const useChat = defineStore("chat", () => {
 			loadSidebar(),
 			call(`${API}.chat.get_bookmarked_ids`),
 			loadUnreadNotifications(),
+			loadPendingResets(),
 		]);
 		bookmarks.value = new Set(saved);
 	}
@@ -712,6 +723,8 @@ export const useChat = defineStore("chat", () => {
 		activeChannel,
 		activeThread,
 		readMarks,
+		pendingResets,
+		loadPendingResets,
 		setReadMarks,
 		unreadNotifications,
 		notificationPermission,
