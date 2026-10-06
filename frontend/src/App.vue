@@ -1,6 +1,10 @@
 <template>
 	<FrappeUIProvider>
-		<div class="flex h-full w-full flex-col overflow-hidden bg-surface-white">
+		<!-- signed out: only the login / forgot-password pages -->
+		<div v-if="!session.isLoggedIn" class="h-full w-full overflow-auto bg-surface-gray-1">
+			<router-view />
+		</div>
+		<div v-else class="flex h-full w-full flex-col overflow-hidden bg-surface-white">
 			<TopBar ref="topBar" />
 			<div class="relative flex min-h-0 flex-1">
 				<AppSidebar v-if="!sidebarCollapsed" />
@@ -20,7 +24,7 @@
 				</Tooltip>
 			</div>
 		</div>
-		<ProfileDrawer />
+		<ProfileDrawer v-if="session.isLoggedIn" />
 	</FrappeUIProvider>
 </template>
 
@@ -32,11 +36,12 @@ import TopBar from "@/components/TopBar.vue";
 import ProfileDrawer from "@/components/ProfileDrawer.vue";
 import { showError, useChat } from "@/stores/chat";
 import { sidebarCollapsed } from "@/layout";
+import { session } from "@/session";
 import LucideChevronRight from "~icons/lucide/chevron-right";
 
 const chat = useChat();
 const topBar = ref(null);
-onMounted(() => chat.init().catch(showError));
+onMounted(() => session.isLoggedIn && chat.init().catch(showError));
 
 function showSidebar() {
 	sidebarCollapsed.value = false;

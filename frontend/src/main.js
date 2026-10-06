@@ -20,7 +20,10 @@ app.use(router);
 function mount() {
 	// server timestamps are in the site's timezone; dayjsLocal converts them for display
 	setConfig("systemTimezone", window.system_timezone);
-	app.config.globalProperties.$socket = initRealtime();
+	// guests only see the login / forgot-password pages: no realtime connection
+	if (window.session_user && window.session_user !== "Guest") {
+		app.config.globalProperties.$socket = initRealtime();
+	}
 	app.mount("#app");
 }
 

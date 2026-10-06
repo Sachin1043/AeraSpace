@@ -110,6 +110,7 @@ const icons = {
 	Assignment: "📋",
 	"Task Update": "🔄",
 	Reminder: "⏰",
+	"Password Reset": "🔑",
 };
 
 const items = createResource({ url: "aeraspace.api.notifications.get_notifications", auto: true });
@@ -130,7 +131,7 @@ const visible = computed(() =>
 );
 
 function title(n) {
-	if (n.notification_type === "Reminder") return n.preview;
+	if (["Reminder", "Password Reset"].includes(n.notification_type)) return n.preview;
 	const from = chat.person(n.from_user).full_name;
 	const where =
 		n.channel_type === "Direct"

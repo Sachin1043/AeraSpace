@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { session } from "@/session";
 
 const routes = [
 	{
@@ -64,12 +65,45 @@ const routes = [
 		component: () => import("@/pages/Activity.vue"),
 	},
 	{
+		path: "/admin/users",
+		name: "AdminUsers",
+		component: () => import("@/pages/AdminUsers.vue"),
+		meta: { admin: true },
+	},
+	{
+		path: "/login",
+		name: "Login",
+		component: () => import("@/pages/Login.vue"),
+		meta: { public: true },
+	},
+	{
+		path: "/forgot-password",
+		name: "ForgotPassword",
+		component: () => import("@/pages/ForgotPassword.vue"),
+		meta: { public: true },
+	},
+	{
 		path: "/:pathMatch(.*)*",
 		redirect: "/",
 	},
 ];
 
-export default createRouter({
+const router = createRouter({
 	history: createWebHistory("/aeraspace"),
 	routes,
 });
+
+router.beforeEach((to) => {
+	if (to.meta.public) {
+		// already signed in: the login page has nothing to offer
+		return session.isLoggedIn && to.name === "Login"
+			? { path: to.query.redirect || "/" }
+			: true;
+	}
+	if (!session.isLoggedIn)
+		return { name: "Login", query: to.fullPath !== "/" ? { redirect: to.fullPath } : {} };
+	if (to.meta.admin && !session.isAdmin) return { path: "/" };
+	return true;
+});
+
+export default router;

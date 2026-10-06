@@ -31,7 +31,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Mention\nThread Reply\nInvite\nAssignment\nTask Update\nReminder",
+   "options": "Mention\nThread Reply\nInvite\nAssignment\nTask Update\nReminder\nPassword Reset",
    "reqd": 1
   },
   {
@@ -79,7 +79,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-09-29 21:40:50.950109",
+ "modified": "2026-10-01 16:22:49.555328",
  "modified_by": "Administrator",
  "module": "AeraSpace",
  "name": "AS Notification",

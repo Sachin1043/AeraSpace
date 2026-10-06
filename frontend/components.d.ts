@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AddMembersDialog: typeof import('./src/components/AddMembersDialog.vue')['default']
     AppSidebar: typeof import('./src/components/AppSidebar.vue')['default']
+    AuthCard: typeof import('./src/components/AuthCard.vue')['default']
     Composer: typeof import('./src/components/Composer.vue')['default']
     CreateChannelDialog: typeof import('./src/components/CreateChannelDialog.vue')['default']
     CreateProjectDialog: typeof import('./src/components/CreateProjectDialog.vue')['default']
@@ -35,5 +36,6 @@ declare module 'vue' {
     TopBar: typeof import('./src/components/TopBar.vue')['default']
     UpdateCard: typeof import('./src/components/UpdateCard.vue')['default']
     UserAvatar: typeof import('./src/components/UserAvatar.vue')['default']
+    UserFormDialog: typeof import('./src/components/UserFormDialog.vue')['default']
   }
 }
