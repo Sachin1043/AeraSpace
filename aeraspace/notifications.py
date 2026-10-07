@@ -142,4 +142,6 @@ def push(
 			ignore_permissions=True
 		)
 		payload["name"] = doc.name
+	if task:
+		payload["project"] = frappe.db.get_value("Task", task, "project")
 	frappe.publish_realtime("as_notify", payload, user=user, after_commit=True)

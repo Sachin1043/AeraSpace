@@ -135,7 +135,7 @@
 						v-for="t in results.tasks"
 						:key="t.name"
 						class="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-surface-gray-1"
-						@click="chat.openTask(t.name)"
+						@click="chat.openTask(t.name, t.project)"
 					>
 						<span class="w-20 shrink-0 text-xs text-ink-gray-5">{{ t.name }}</span>
 						<span

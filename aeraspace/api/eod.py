@@ -34,21 +34,21 @@ def get_my_update(date: str | None = None):
 	)
 
 	done = frappe.get_all(
-		"AS Task",
-		filters={"assignee": user, "status": "Done", "completed_on": ("between", [date, add_days(date, 1)])},
-		fields=["name", "title"],
+		"Task",
+		filters={"as_assignee": user, "as_status": "Done", "completed_on": date},
+		fields=["name", "subject as title"],
 	)
 	ongoing = frappe.get_all(
-		"AS Task",
-		filters={"assignee": user, "status": ("in", OPEN_TASK_STATUSES)},
-		fields=["name", "title", "status"],
+		"Task",
+		filters={"as_assignee": user, "as_status": ("in", OPEN_TASK_STATUSES)},
+		fields=["name", "subject as title", "as_status as status"],
 		order_by="modified desc",
 	)
 	time_logs = frappe.db.sql(
-		"""select p.project_name, t.title as task_title, l.task, sum(l.minutes) as minutes
+		"""select p.project_name, t.subject as task_title, l.task, sum(l.minutes) as minutes
 		from `tabAS Time Log` l
-		join `tabAS Project` p on p.name = l.project
-		left join `tabAS Task` t on t.name = l.task
+		join `tabProject` p on p.name = l.project
+		left join `tabTask` t on t.name = l.task
 		where l.user = %s and l.log_date = %s
 		group by l.project, l.task""",
 		(user, date),

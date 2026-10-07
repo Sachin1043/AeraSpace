@@ -23,6 +23,22 @@
 	--outline-gray-modals: #e0e3e7;
 
 	/* secondary text a touch darker so hints and timestamps stay readable */
-	--text-ink-gray-4: #8a8f96;
-	--text-ink-gray-5: #6b7079;
+	--ink-gray-4: #8a8f96;
+	--ink-gray-5: #6b7079;
+}
+
+/*
+ * Native <select> dropdowns (board/timesheet filters, dialogs): the open list is drawn by the
+ * browser and ignored the theme, giving light text on a white list in dark mode. Give the
+ * box and its options the theme's colours in both modes.
+ */
+select {
+	background-color: var(--surface-gray-2);
+	color: var(--ink-gray-8);
+	border-color: var(--outline-gray-2);
+}
+select option,
+select optgroup {
+	background-color: var(--surface-modal);
+	color: var(--ink-gray-8);
 }

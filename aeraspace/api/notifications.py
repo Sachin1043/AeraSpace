@@ -42,7 +42,7 @@ def get_notifications(limit: int = 50):
 	)
 	projects = dict(
 		frappe.get_all(
-			"AS Task",
+			"Task",
 			filters={"name": ("in", [r.task for r in rows if r.task] or [""])},
 			fields=["name", "project"],
 			as_list=True,

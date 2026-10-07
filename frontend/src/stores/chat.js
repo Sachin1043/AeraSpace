@@ -523,8 +523,13 @@ export const useChat = defineStore("chat", () => {
 	const emitTask = (type) => (payload) =>
 		taskListeners.forEach((listener) => listener(type, payload));
 
-	function openTask(task) {
-		router.push({ name: "Project", params: { project: projectOf(task) }, query: { task } });
+	// tasks made in Desk (TASK-2026-00001) don't carry their project in the name, so pass it when known
+	function openTask(task, project) {
+		router.push({
+			name: "Project",
+			params: { project: project || projectOf(task) },
+			query: { task },
+		});
 	}
 
 	// ---- notifications ----------------------------------------------------
@@ -575,7 +580,7 @@ export const useChat = defineStore("chat", () => {
 		if (n.task)
 			return {
 				name: "Project",
-				params: { project: projectOf(n.task) },
+				params: { project: n.project || projectOf(n.task) },
 				query: { task: n.task },
 			};
 		if (!n.channel) return { name: "Activity" };

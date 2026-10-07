@@ -214,9 +214,9 @@ def search(query: str, scope: str = "all"):
 
 def _search_tasks(terms, filters, channels, user):
 	projects = frappe.get_all(
-		"AS Project",
-		filters={"channel": ("in", list(channels) or [""])},
-		fields=["name", "project_name", "channel"],
+		"Project",
+		filters={"as_channel": ("in", list(channels) or [""])},
+		fields=["name", "project_name", "as_channel as channel"],
 	)
 	if filters.get("in"):
 		allowed = resolve_channels(filters["in"], channels, user)
@@ -227,17 +227,18 @@ def _search_tasks(terms, filters, channels, user):
 	conditions = ["t.project in %(projects)s"]
 	params = {"projects": [p.name for p in projects]}
 	for i, term in enumerate(terms):
-		conditions.append(f"(t.title like %(t{i})s or t.name like %(t{i})s or t.description like %(t{i})s)")
+		conditions.append(f"(t.subject like %(t{i})s or t.name like %(t{i})s or t.description like %(t{i})s)")
 		params[f"t{i}"] = like(term)
 	if filters.get("from"):
-		conditions.append("(t.assignee in %(people)s or t.reporter in %(people)s)")
+		conditions.append("(t.as_assignee in %(people)s or t.as_reporter in %(people)s)")
 		params["people"] = tuple(resolve_users(filters["from"])) or ("",)
 
 	names = {p.name: p.project_name for p in projects}
 	rows = frappe.db.sql(
-		f"""select t.name, t.title, t.project, t.status, t.priority, t.assignee, t.due_date
-		from `tabAS Task` t where {" and ".join(conditions)}
-		order by field(t.status, 'Done'), t.modified desc limit {LIMIT}""",
+		f"""select t.name, t.subject as title, t.project, t.as_status as status, t.priority,
+			t.as_assignee as assignee, date(t.exp_end_date) as due_date
+		from `tabTask` t where {" and ".join(conditions)}
+		order by field(t.as_status, 'Done'), t.modified desc limit {LIMIT}""",
 		params,
 		as_dict=True,
 	)

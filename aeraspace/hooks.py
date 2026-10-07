@@ -274,6 +274,13 @@ doc_events = {
 	"User": {
 		"on_update": "aeraspace.api.directory.create_profile_for_user",
 	},
+	"Project": {
+		"before_validate": "aeraspace.projects.sync_project_status",
+	},
+	"Task": {
+		"before_validate": "aeraspace.projects.sync_task_status",
+		"on_update": "aeraspace.projects.after_task_save",
+	},
 	"Employee Checkin": {
 		"validate": "aeraspace.hr.protect_checkin",
 		"on_trash": "aeraspace.hr.protect_checkin",

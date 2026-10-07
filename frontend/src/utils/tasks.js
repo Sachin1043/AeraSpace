@@ -19,7 +19,8 @@ export const PRIORITY_STYLES = {
 	Urgent: "bg-surface-red-2 text-ink-red-4",
 };
 
-// task names are "<PROJECT KEY>-<number>", and a project's name is its key
+// AeraSpace task names are "<PROJECT KEY>-<number>" (a project's name is its key); fallback only,
+// since tasks made in Desk are named TASK-2026-00001
 export function projectOf(task) {
 	return (task || "").replace(/-\d+$/, "");
 }

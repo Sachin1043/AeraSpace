@@ -63,7 +63,7 @@
    "fieldname": "task",
    "fieldtype": "Link",
    "label": "Task",
-   "options": "AS Task"
+   "options": "Task"
   },
   {
    "fieldname": "preview",

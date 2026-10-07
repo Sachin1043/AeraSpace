@@ -38,8 +38,8 @@ class TestProjects(IntegrationTestCase):
 
 	def test_project_creates_channel_with_members(self):
 		name = self.project()
-		project = frappe.get_doc("AS Project", name)
-		channel = frappe.get_doc("AS Channel", project.channel)
+		project = frappe.get_doc("Project", name)
+		channel = frappe.get_doc("AS Channel", project.as_channel)
 		self.assertEqual(channel.project, name)
 		self.assertEqual(channel.channel_type, "Private")
 		members = set(frappe.get_all("AS Channel Member", filters={"channel": channel.name}, pluck="user"))
@@ -62,7 +62,7 @@ class TestProjects(IntegrationTestCase):
 
 	def test_task_ids_are_sequential_per_project(self):
 		name = self.project()
-		key = frappe.db.get_value("AS Project", name, "project_key")
+		key = frappe.db.get_value("Project", name, "as_project_key")
 		with self.set_user(self.alice):
 			first = task_api.create_task(name, "One")
 			second = task_api.create_task(name, "Two")
@@ -92,7 +92,7 @@ class TestProjects(IntegrationTestCase):
 
 	def test_create_task_from_message(self):
 		name = self.project()
-		channel = frappe.db.get_value("AS Project", name, "channel")
+		channel = frappe.db.get_value("Project", name, "as_channel")
 		with self.set_user(self.bob):
 			message = chat.send_message(channel, "Shopify inventory sync is failing")
 		with self.set_user(self.alice):
@@ -122,7 +122,7 @@ class TestProjects(IntegrationTestCase):
 			self.assertRaises(frappe.PermissionError, task_api.delete_task, a.name)
 		with self.set_user(self.alice):
 			task_api.delete_task(a.name)
-		self.assertFalse(frappe.db.exists("AS Task", a.name))
+		self.assertFalse(frappe.db.exists("Task", a.name))
 
 	def test_my_tasks_across_projects(self):
 		one, two = self.project(), self.project()
