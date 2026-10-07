@@ -12,6 +12,10 @@ def after_migrate():
 	from aeraspace.hr import link_all_users
 
 	link_all_users()  # no-op until ERPNext + HRMS are installed and set up
+	if "erpnext" in frappe.get_installed_apps():
+		from aeraspace.projects import ensure_custom_fields
+
+		ensure_custom_fields()
 
 
 def ensure_role():

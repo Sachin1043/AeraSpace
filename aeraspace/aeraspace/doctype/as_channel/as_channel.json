@@ -60,7 +60,7 @@
    "fieldname": "project",
    "fieldtype": "Link",
    "label": "Project",
-   "options": "AS Project",
+   "options": "Project",
    "read_only": 1,
    "search_index": 1
   },

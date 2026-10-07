@@ -3,8 +3,17 @@ from frappe import _
 from frappe.utils import get_fullname
 
 from aeraspace.aeraspace.doctype.as_channel.as_channel import normalize_channel_name
-from aeraspace.aeraspace.doctype.as_project.as_project import suggest_key
+from aeraspace.hr import default_company
 from aeraspace.notifications import notify_invite
+from aeraspace.projects import (
+	PROJECT_COLUMNS,
+	PROJECT_SELECT,
+	PROJECT_STATUSES,
+	clean_key,
+	select_fields,
+	suggest_key,
+	to_columns,
+)
 from aeraspace.utils import (
 	OPEN_TYPES,
 	add_member,
@@ -16,23 +25,12 @@ from aeraspace.utils import (
 	require_login,
 )
 
-PROJECT_FIELDS = [
-	"name",
-	"project_name",
-	"project_key",
-	"description",
-	"status",
-	"visibility",
-	"lead",
-	"channel",
-	"creation",
-]
 EDITABLE = ("project_name", "description", "status", "lead", "client")
 
 
 def get_project_or_throw(project: str):
-	doc = frappe.db.get_value("AS Project", project, PROJECT_FIELDS, as_dict=True)
-	if not doc:
+	doc = frappe.db.get_value("Project", project, PROJECT_SELECT, as_dict=True)
+	if not doc or not doc.channel:
 		frappe.throw(_("Project not found"), frappe.DoesNotExistError)
 	return doc
 
@@ -63,14 +61,14 @@ def get_projects():
 	user = require_login()
 	projects = frappe.db.sql(
 		f"""
-		select {", ".join("p." + f for f in PROJECT_FIELDS)},
-			exists(select 1 from `tabAS Channel Member` m where m.channel = p.channel and m.user = %(user)s) as is_member,
-			(select count(*) from `tabAS Channel Member` m where m.channel = p.channel) as member_count
-		from `tabAS Project` p
-		join `tabAS Channel` c on c.name = p.channel
+		select {", ".join(select_fields(PROJECT_COLUMNS, "p"))},
+			exists(select 1 from `tabAS Channel Member` m where m.channel = p.as_channel and m.user = %(user)s) as is_member,
+			(select count(*) from `tabAS Channel Member` m where m.channel = p.as_channel) as member_count
+		from `tabProject` p
+		join `tabAS Channel` c on c.name = p.as_channel
 		where c.channel_type in %(open)s
-			or exists(select 1 from `tabAS Channel Member` m where m.channel = p.channel and m.user = %(user)s)
-		order by field(p.status, 'Active', 'On Hold', 'Completed', 'Archived'), p.project_name
+			or exists(select 1 from `tabAS Channel Member` m where m.channel = p.as_channel and m.user = %(user)s)
+		order by field(p.as_status, 'Active', 'On Hold', 'Completed', 'Archived'), p.project_name
 		""",
 		{"user": user, "open": OPEN_TYPES},
 		as_dict=True,
@@ -80,8 +78,8 @@ def get_projects():
 
 	counts = {}
 	for project, status, count in frappe.db.sql(
-		"""select project, status, count(*) from `tabAS Task`
-		where project in %(projects)s group by project, status""",
+		"""select project, as_status, count(*) from `tabTask`
+		where project in %(projects)s group by project, as_status""",
 		{"projects": [p.name for p in projects]},
 	):
 		counts.setdefault(project, {})[status] = count
@@ -124,22 +122,31 @@ def create_project(
 	me = require_login()
 	if visibility not in ("Private", "Public"):
 		frappe.throw(_("Visibility must be Private or Public"))
+	project_name = (project_name or "").strip()
+	key = clean_key(project_key) if project_key else suggest_key(project_name)
 
 	project = frappe.get_doc(
 		{
-			"doctype": "AS Project",
+			"doctype": "Project",
 			"project_name": project_name,
-			"project_key": project_key or suggest_key(project_name),
-			"description": description,
-			"visibility": visibility,
-			"lead": lead or me,
-			"client": (client or "").strip() or None,
+			"company": default_company(),
+			**to_columns(
+				PROJECT_COLUMNS,
+				{
+					"project_key": key,
+					"description": description,
+					"status": "Active",
+					"visibility": visibility,
+					"lead": lead or me,
+					"client": (client or "").strip() or None,
+				},
+			),
 		}
-	).insert(ignore_permissions=True)
+	).insert(ignore_permissions=True, set_name=key)
 
 	channel_name = normalize_channel_name(f"project-{project.project_name}")
 	if frappe.db.exists("AS Channel", {"channel_name": channel_name, "is_archived": 0}):
-		channel_name = normalize_channel_name(f"project-{project.project_key}")
+		channel_name = normalize_channel_name(f"project-{key}")
 	channel = frappe.get_doc(
 		{
 			"doctype": "AS Channel",
@@ -149,7 +156,7 @@ def create_project(
 			"project": project.name,
 		}
 	).insert(ignore_permissions=True)
-	project.db_set("channel", channel.name)
+	project.db_set("as_channel", channel.name)
 
 	members = frappe.parse_json(members) if isinstance(members, str) else (members or [])
 	members = [
@@ -172,8 +179,10 @@ def update_project(project: str, **values):
 	doc = get_project_or_throw(project)
 	check_channel_admin(doc.channel)
 	values = {k: v for k, v in values.items() if k in EDITABLE}
-	project_doc = frappe.get_doc("AS Project", project)
-	project_doc.update(values)
+	if "status" in values and values["status"] not in PROJECT_STATUSES:
+		frappe.throw(_("Invalid status"))
+	project_doc = frappe.get_doc("Project", project)
+	project_doc.update(to_columns(PROJECT_COLUMNS, values))
 	project_doc.save(ignore_permissions=True)
 	if "description" in values:
 		frappe.db.set_value("AS Channel", doc.channel, "description", values["description"])

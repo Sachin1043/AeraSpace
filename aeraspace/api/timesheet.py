@@ -14,10 +14,10 @@ GROUPS = {
 	"project": ("l.project", "p.project_name"),
 	"employee": ("l.user", "u.full_name"),
 	"client": (
-		"coalesce(nullif(p.client, ''), '(No client)')",
-		"coalesce(nullif(p.client, ''), '(No client)')",
+		"coalesce(nullif(p.as_client, ''), '(No client)')",
+		"coalesce(nullif(p.as_client, ''), '(No client)')",
 	),
-	"task": ("coalesce(l.task, '')", "coalesce(concat(l.task, ' · ', t.title), '(No task)')"),
+	"task": ("coalesce(l.task, '')", "coalesce(concat(l.task, ' · ', t.subject), '(No task)')"),
 	"date": ("l.log_date", "l.log_date"),
 }
 
@@ -83,11 +83,11 @@ def _own_log(name):
 def get_my_logs(from_date: str, to_date: str):
 	user = require_login()
 	rows = frappe.db.sql(
-		"""select l.name, l.user, l.log_date, l.project, p.project_name, l.task, t.title as task_title,
+		"""select l.name, l.user, l.log_date, l.project, p.project_name, l.task, t.subject as task_title,
 			l.minutes, l.description, l.creation
 		from `tabAS Time Log` l
-		join `tabAS Project` p on p.name = l.project
-		left join `tabAS Task` t on t.name = l.task
+		join `tabProject` p on p.name = l.project
+		left join `tabTask` t on t.name = l.task
 		where l.user = %(user)s and l.log_date between %(from)s and %(to)s
 		order by l.log_date desc, l.creation desc""",
 		{"user": user, "from": getdate(from_date), "to": getdate(to_date)},
@@ -103,7 +103,7 @@ def _visible_condition(viewer):
 		return "1=1", {}
 	# plus: all time on projects where the viewer is an admin of the project channel
 	admin_projects = frappe.db.sql_list(
-		"""select p.name from `tabAS Project` p join `tabAS Channel Member` m on m.channel = p.channel
+		"""select p.name from `tabProject` p join `tabAS Channel Member` m on m.channel = p.as_channel
 		where m.user = %s and m.role = 'Admin'""",
 		viewer,
 	)
@@ -125,12 +125,12 @@ def _report_rows(viewer, from_date, to_date, project=None, user=None):
 		params["user"] = user
 	return frappe.db.sql(
 		f"""select l.name, l.user, u.full_name, l.log_date, l.project, p.project_name,
-			coalesce(nullif(p.client, ''), '(No client)') as client,
-			l.task, t.title as task_title, l.minutes, l.description
+			coalesce(nullif(p.as_client, ''), '(No client)') as client,
+			l.task, t.subject as task_title, l.minutes, l.description
 		from `tabAS Time Log` l
-		join `tabAS Project` p on p.name = l.project
+		join `tabProject` p on p.name = l.project
 		join `tabUser` u on u.name = l.user
-		left join `tabAS Task` t on t.name = l.task
+		left join `tabTask` t on t.name = l.task
 		where {" and ".join(filters)}
 		order by l.log_date desc, u.full_name""",
 		params,

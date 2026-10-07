@@ -42,7 +42,7 @@
 						:key="task.name"
 						:task="task"
 						show-status
-						@open="chat.openTask(task.name)"
+						@open="chat.openTask(task.name, task.project)"
 					/>
 				</div>
 			</section>

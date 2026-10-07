@@ -17,7 +17,7 @@ class ASTimeLog(Document):
 			frappe.throw(_("A single entry can't be more than 24 hours"))
 		if getdate(self.log_date) > getdate(today()):
 			frappe.throw(_("You can't log time for a future date"))
-		if self.task and frappe.db.get_value("AS Task", self.task, "project") != self.project:
+		if self.task and frappe.db.get_value("Task", self.task, "project") != self.project:
 			frappe.throw(_("Task {0} is not part of this project").format(self.task))
 		self.description = (self.description or "").strip()
 

@@ -238,7 +238,7 @@
 			v-model="showCreateTask"
 			:default-project="details?.project"
 			:source-message="taskSource"
-			@created="(t) => chat.openTask(t.name)"
+			@created="(t) => chat.openTask(t.name, t.project)"
 		/>
 	</div>
 </template>
