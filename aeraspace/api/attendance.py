@@ -14,6 +14,7 @@ from frappe import _
 from frappe.utils import add_days, date_diff, getdate, now_datetime
 
 from aeraspace import hr
+from aeraspace.api.hr_requests import approved_marks
 from aeraspace.team import can_view
 from aeraspace.utils import require_login
 
@@ -239,7 +240,7 @@ def get_history(from_date: str, to_date: str, user: str | None = None):
 	joined = frappe.db.get_value("Employee", employee, "date_of_joining")
 	row = _shift_row(employee)
 	holidays = _holidays(employee, from_date, to_date)
-	hrms_status = _hrms_attendance(employee, from_date, to_date)
+	marks = {**_hrms_attendance(employee, from_date, to_date), **approved_marks(employee, from_date, to_date)}
 	by_day = {}
 	for event in _events(employee, from_date, to_date):
 		by_day.setdefault(getdate(event.time), []).append(event)
@@ -250,23 +251,28 @@ def get_history(from_date: str, to_date: str, user: str | None = None):
 		summary = summarize(employee, day, by_day.get(day, []), _shift_start(employee, day, row))
 		holiday = holidays.get(day)
 		summary["holiday"] = holiday.description if holiday else None
-		summary["status"] = _status(summary, day, today, joined, holiday, hrms_status.get(day), row)
+		summary["status"] = _status(summary, day, today, joined, holiday, marks.get(day), row)
 		days.append(summary)
 	return {"employee": employee, "today": str(today), "days": days}
 
 
-def _status(summary, day, today, joined, holiday, hrms_status, shift):
-	if hrms_status in ("On Leave", "Work From Home"):
-		return hrms_status
+def _status(summary, day, today, joined, holiday, mark, shift):
+	"""`mark` comes from approved requests (or HRMS attendance): leave, WFH, a corrected day."""
+	if mark in ("On Leave", "Work From Home"):
+		return mark
+	if mark == "Half Day Leave":
+		return "Half Day"
 	if day > today:
 		return "Holiday" if holiday and not holiday.weekly_off else "Weekly Off" if holiday else "Upcoming"
 	if summary["first_in"] is None:
+		if mark == "Corrected":
+			return "Present"
 		if holiday:
 			return "Weekly Off" if holiday.weekly_off else "Holiday"
 		if joined and day < getdate(joined):
 			return "Not Joined"
 		return "Not Checked In" if day == today else "Absent"
-	if day == today:
+	if day == today or mark == "Corrected":
 		return "Present"
 	if summary["open"]:
 		return "Missed Check-out"
@@ -304,7 +310,7 @@ def _holidays(employee, from_date, to_date):
 
 
 def _hrms_attendance(employee, from_date, to_date):
-	"""Leave / WFH marked in HRMS for these days."""
+	"""Leave / WFH marked in HRMS for these days (also covers ones entered in Desk)."""
 	rows = frappe.get_all(
 		"Attendance",
 		filters={"employee": employee, "docstatus": 1, "attendance_date": ("between", (from_date, to_date))},

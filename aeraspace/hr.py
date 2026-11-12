@@ -42,8 +42,11 @@ def ensure_hr_setup():
 		return
 	company = default_company()
 	holiday_list = ensure_holiday_list(company)
+	ensure_holiday_assignment(company, holiday_list)
 	ensure_default_shift(holiday_list)
 	ensure_checkin_fields()
+	ensure_request_fields()
+	ensure_leave_setup()
 
 
 def ensure_holiday_list(company: str) -> str:
@@ -72,6 +75,47 @@ def ensure_holiday_list(company: str) -> str:
 
 	frappe.db.set_value("Company", company, "default_holiday_list", name)
 	return name
+
+
+def ensure_holiday_assignment(company: str, holiday_list: str):
+	"""HRMS v16 finds holidays through Holiday List Assignments (leave days, auto attendance)."""
+	if frappe.db.exists(
+		"Holiday List Assignment", {"assigned_to": company, "holiday_list": holiday_list, "docstatus": 1}
+	):
+		return
+	start = frappe.db.get_value("Holiday List", holiday_list, "from_date")
+	assignment = frappe.get_doc(
+		{
+			"doctype": "Holiday List Assignment",
+			"applicable_for": "Company",
+			"assigned_to": company,
+			"holiday_list": holiday_list,
+			"from_date": start,
+		}
+	)
+	assignment.insert(ignore_permissions=True)
+	assignment.submit()
+
+
+# leave types people can pick in AeraSpace; until HR allocates balances, they may go negative
+LEAVE_TYPES = ("Casual Leave", "Sick Leave", "Privilege Leave", "Leave Without Pay")
+
+
+def ensure_leave_setup():
+	for leave_type in LEAVE_TYPES:
+		if not frappe.db.exists("Leave Type", leave_type):
+			frappe.get_doc(
+				{
+					"doctype": "Leave Type",
+					"leave_type_name": leave_type,
+					"is_lwp": int(leave_type == "Leave Without Pay"),
+					"include_holiday": 0,
+				}
+			).insert(ignore_permissions=True)
+		elif not frappe.db.exists("Leave Allocation", {"leave_type": leave_type, "docstatus": 1}):
+			frappe.db.set_value("Leave Type", leave_type, "allow_negative", 1)
+	# AeraSpace notifies people itself; HRMS's emails need templates nobody has set up
+	frappe.db.set_single_value("HR Settings", "send_leave_notification", 0)
 
 
 def ensure_default_shift(holiday_list: str | None = None) -> str:
@@ -143,6 +187,48 @@ def ensure_checkin_fields():
 					"read_only": 1,
 				},
 			]
+		},
+		update=True,
+	)
+
+
+def ensure_request_fields():
+	"""Approval details for requests made in AeraSpace (Attendance Request has no approval flow)."""
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+
+	note = {
+		"fieldname": "as_decision_note",
+		"label": "Approver's Note",
+		"fieldtype": "Small Text",
+		"read_only": 1,
+		"allow_on_submit": 1,
+	}
+	create_custom_fields(
+		{
+			"Attendance Request": [
+				{
+					"fieldname": "as_status",
+					"label": "Approval Status",
+					"fieldtype": "Select",
+					"options": "\nOpen\nApproved\nRejected\nCancelled",
+					"insert_after": "reason",
+					"read_only": 1,
+					"allow_on_submit": 1,
+					"in_list_view": 1,
+					"in_standard_filter": 1,
+				},
+				{
+					"fieldname": "as_approver",
+					"label": "Approver",
+					"fieldtype": "Link",
+					"options": "User",
+					"insert_after": "as_status",
+					"read_only": 1,
+					"allow_on_submit": 1,
+				},
+				{**note, "insert_after": "explanation"},
+			],
+			"Leave Application": [{**note, "insert_after": "leave_approver_name"}],
 		},
 		update=True,
 	)

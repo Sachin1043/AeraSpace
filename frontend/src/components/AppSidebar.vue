@@ -126,9 +126,12 @@ import LucideFolderKanban from "~icons/lucide/folder-kanban";
 import LucideListTodo from "~icons/lucide/list-todo";
 import LucideClipboardCheck from "~icons/lucide/clipboard-check";
 import LucideTimer from "~icons/lucide/timer";
+import LucideCalendarCheck from "~icons/lucide/calendar-check";
+import { useRequests } from "@/stores/requests";
 import LucideBell from "~icons/lucide/bell";
 
 const chat = useChat();
+const requests = useRequests();
 const route = useRoute();
 const showCreateChannel = ref(false);
 const showNewMessage = ref(false);
@@ -149,6 +152,12 @@ const navItems = [
 	{ label: "Tasks", route: "/tasks", icon: LucideListTodo },
 	{ label: "EOD", route: "/eod", icon: LucideClipboardCheck },
 	{ label: "Timesheets", route: "/timesheets", icon: LucideTimer },
+	{
+		label: "Requests",
+		route: "/requests",
+		icon: LucideCalendarCheck,
+		badge: () => requests.options.pending_approvals,
+	},
 ];
 
 function hide() {

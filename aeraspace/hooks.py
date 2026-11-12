@@ -302,4 +302,5 @@ scheduler_events = {
 	"cron": {
 		"*/15 * * * *": ["aeraspace.tasks.eod_reminders"],
 	},
+	"daily": ["aeraspace.api.hr_requests.submit_due_attendance_requests"],
 }

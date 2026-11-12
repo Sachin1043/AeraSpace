@@ -111,6 +111,7 @@ const icons = {
 	"Task Update": "🔄",
 	Reminder: "⏰",
 	"Password Reset": "🔑",
+	Request: "📝",
 };
 
 const items = createResource({ url: "aeraspace.api.notifications.get_notifications", auto: true });
