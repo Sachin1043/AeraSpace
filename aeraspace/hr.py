@@ -10,6 +10,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, getdate, today
 
+from aeraspace import hr_rules
 from aeraspace.install import AERASPACE_ROLE
 
 DEFAULT_SHIFT = "General Shift"
@@ -47,6 +48,7 @@ def ensure_hr_setup():
 	ensure_checkin_fields()
 	ensure_request_fields()
 	ensure_leave_setup()
+	hr_rules.apply_setup(company, holiday_list)
 
 
 def ensure_holiday_list(company: str) -> str:
@@ -97,7 +99,7 @@ def ensure_holiday_assignment(company: str, holiday_list: str):
 	assignment.submit()
 
 
-# leave types people can pick in AeraSpace; until HR allocates balances, they may go negative
+# leave types people can pick in AeraSpace (yearly amounts are in hr_rules)
 LEAVE_TYPES = ("Casual Leave", "Sick Leave", "Privilege Leave", "Leave Without Pay")
 
 
@@ -112,8 +114,6 @@ def ensure_leave_setup():
 					"include_holiday": 0,
 				}
 			).insert(ignore_permissions=True)
-		elif not frappe.db.exists("Leave Allocation", {"leave_type": leave_type, "docstatus": 1}):
-			frappe.db.set_value("Leave Type", leave_type, "allow_negative", 1)
 	# AeraSpace notifies people itself; HRMS's emails need templates nobody has set up
 	frappe.db.set_single_value("HR Settings", "send_leave_notification", 0)
 
@@ -229,6 +229,17 @@ def ensure_request_fields():
 				{**note, "insert_after": "explanation"},
 			],
 			"Leave Application": [{**note, "insert_after": "leave_approver_name"}],
+			"Attendance": [
+				{
+					"fieldname": "as_late_penalty",
+					"label": "Late Penalty",
+					"fieldtype": "Check",
+					"description": "Half day for the 3rd late check-in in a month",
+					"insert_after": "late_entry",
+					"read_only": 1,
+					"allow_on_submit": 1,
+				}
+			],
 		},
 		update=True,
 	)
@@ -312,6 +323,7 @@ def _ensure_employee(user: str) -> str | None:
 	_apply_profile(employee, user)
 	employee.insert(ignore_permissions=True)
 	_add_employee_role(user)
+	hr_rules.assign_leave_policy(employee.name)
 	return employee.name
 
 
@@ -406,4 +418,5 @@ def link_all_users():
 			name = ensure_employee(user)
 			if name and not before:
 				created.append((user, name))
+	hr_rules.assign_leave_to_everyone()
 	return created

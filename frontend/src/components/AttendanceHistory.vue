@@ -256,7 +256,9 @@ const DayHeader = defineComponent({
 					{
 						class: `ml-auto rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`,
 					},
-					props.day.holiday && !props.day.first_in
+					props.day.late_penalty
+						? "Half Day · 3rd late this month"
+						: props.day.holiday && !props.day.first_in
 						? `${props.day.status} · ${props.day.holiday}`
 						: props.day.status
 				),

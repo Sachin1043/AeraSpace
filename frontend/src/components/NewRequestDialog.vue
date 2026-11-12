@@ -20,13 +20,18 @@
 					</button>
 				</div>
 
-				<FormControl
-					v-if="form.kind === 'leave'"
-					v-model="form.leave_type"
-					type="select"
-					label="Leave type"
-					:options="leaveTypeOptions"
-				/>
+				<div v-if="form.kind === 'leave'">
+					<FormControl
+						v-model="form.leave_type"
+						type="select"
+						label="Leave type"
+						:options="leaveTypeOptions"
+					/>
+					<p v-if="noticeDays" class="mt-1 text-xs text-ink-gray-5">
+						Apply at least {{ noticeDays }} day before. Sick Leave can be applied the
+						same day.
+					</p>
+				</div>
 
 				<div class="grid grid-cols-2 gap-3">
 					<FormControl
@@ -118,9 +123,13 @@ const kinds = [
 
 const form = reactive({});
 function reset() {
-	const date = props.defaults.date || todayDate;
+	const kind = props.defaults.kind || "leave";
+	// leave usually needs a day's notice, so it starts on tomorrow
+	const date =
+		props.defaults.date ||
+		(kind === "leave" ? dayjs().add(1, "day").format("YYYY-MM-DD") : todayDate);
 	Object.assign(form, {
-		kind: props.defaults.kind || "leave",
+		kind,
 		leave_type: requests.options.leave_types[0] || "",
 		from_date: date,
 		to_date: date,
@@ -142,10 +151,12 @@ watch(
 
 const leaveTypeOptions = computed(() =>
 	requests.options.leave_types.map((t) => {
-		const taken = requests.options.taken_this_year[t];
-		return { label: taken ? `${t} · ${taken} taken this year` : t, value: t };
+		const left = requests.options.balances?.[t];
+		return { label: left === undefined ? t : `${t} · ${left} left`, value: t };
 	})
 );
+
+const noticeDays = computed(() => requests.options.notice_days?.[form.leave_type] || 0);
 
 const days = computed(() => {
 	if (!form.from_date || !form.to_date || form.to_date < form.from_date) return 0;
