@@ -112,6 +112,7 @@ const icons = {
 	Reminder: "⏰",
 	"Password Reset": "🔑",
 	Request: "📝",
+	Meeting: "📅",
 };
 
 const items = createResource({ url: "aeraspace.api.notifications.get_notifications", auto: true });

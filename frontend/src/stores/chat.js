@@ -552,6 +552,8 @@ export const useChat = defineStore("chat", () => {
 	function notificationTitle(n) {
 		if (n.notification_type === "Reminder") return `⏰ ${n.preview}`;
 		if (n.notification_type === "Password Reset") return `🔑 ${n.preview}`;
+		if (n.notification_type === "Meeting")
+			return `📅 ${person(n.from_user).full_name} ${n.preview}`;
 		if (n.notification_type === "Request")
 			return `📝 ${person(n.from_user).full_name} ${n.preview}`;
 		const from = person(n.from_user).full_name;
@@ -577,6 +579,7 @@ export const useChat = defineStore("chat", () => {
 
 	function notificationRoute(n) {
 		if (n.notification_type === "Reminder") return { name: "EOD" };
+		if (n.notification_type === "Meeting") return { name: "Meetings" };
 		// to an approver it's something to decide; to the requester, news about their own request
 		if (n.notification_type === "Request")
 			return {

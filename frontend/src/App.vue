@@ -27,6 +27,7 @@
 		<ProfileDrawer v-if="session.isLoggedIn" />
 		<template v-if="session.isLoggedIn">
 			<IncomingCall />
+			<MeetingReminder v-if="!calls.incoming" />
 			<CallWindow />
 		</template>
 	</FrappeUIProvider>
@@ -40,10 +41,12 @@ import TopBar from "@/components/TopBar.vue";
 import ProfileDrawer from "@/components/ProfileDrawer.vue";
 import IncomingCall from "@/components/IncomingCall.vue";
 import CallWindow from "@/components/CallWindow.vue";
+import MeetingReminder from "@/components/MeetingReminder.vue";
 import { showError, useChat } from "@/stores/chat";
 import { useAttendance } from "@/stores/attendance";
 import { useCall } from "@/stores/call";
 import { useRequests } from "@/stores/requests";
+import { useMeetings } from "@/stores/meetings";
 import { sidebarCollapsed } from "@/layout";
 import { session } from "@/session";
 import LucideChevronRight from "~icons/lucide/chevron-right";
@@ -52,6 +55,7 @@ const chat = useChat();
 const attendance = useAttendance();
 const calls = useCall();
 const requests = useRequests();
+const meetings = useMeetings();
 const topBar = ref(null);
 onMounted(async () => {
 	if (!session.isLoggedIn) return;
@@ -59,6 +63,7 @@ onMounted(async () => {
 	attendance.init().catch(showError);
 	calls.init();
 	requests.init();
+	meetings.init();
 });
 
 function showSidebar() {

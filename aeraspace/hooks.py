@@ -301,6 +301,7 @@ permission_query_conditions = {
 scheduler_events = {
 	"cron": {
 		"*/15 * * * *": ["aeraspace.tasks.eod_reminders"],
+		"* * * * *": ["aeraspace.api.meeting.send_reminders"],
 	},
 	"daily": ["aeraspace.api.hr_requests.submit_due_attendance_requests"],
 }
