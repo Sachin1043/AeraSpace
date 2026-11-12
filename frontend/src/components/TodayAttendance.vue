@@ -41,17 +41,31 @@
 				</dd>
 			</div>
 		</dl>
+
+		<div class="mt-3 flex justify-end border-t pt-3">
+			<button
+				class="flex items-center gap-1 text-sm font-medium text-ink-blue-3 hover:underline"
+				@click="showHistory = true"
+			>
+				<LucideCalendarDays class="size-4" />
+				View attendance
+			</button>
+		</div>
+		<AttendanceHistory v-if="showHistory" v-model="showHistory" />
 	</section>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { Button } from "frappe-ui";
 import { useAttendance } from "@/stores/attendance";
 import { formatHours } from "@/utils/clock";
+import AttendanceHistory from "./AttendanceHistory.vue";
 import LucideCoffee from "~icons/lucide/coffee";
+import LucideCalendarDays from "~icons/lucide/calendar-days";
 
 const attendance = useAttendance();
+const showHistory = ref(false);
 const today = computed(() => attendance.data.today || {});
 
 const badge = computed(

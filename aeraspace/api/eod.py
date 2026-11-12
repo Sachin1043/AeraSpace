@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, get_datetime, get_fullname, getdate, now_datetime, today
 
+from aeraspace import timesheets
 from aeraspace.aeraspace.doctype.as_daily_update.as_daily_update import SECTIONS
 from aeraspace.aeraspace.doctype.as_settings.as_settings import get_settings, is_working_day
 from aeraspace.team import can_view, reportees, team_scope
@@ -45,8 +46,8 @@ def get_my_update(date: str | None = None):
 		order_by="modified desc",
 	)
 	time_logs = frappe.db.sql(
-		"""select p.project_name, t.subject as task_title, l.task, sum(l.minutes) as minutes
-		from `tabAS Time Log` l
+		f"""select p.project_name, t.subject as task_title, l.task, sum(l.minutes) as minutes
+		from {timesheets.ENTRIES} l
 		join `tabProject` p on p.name = l.project
 		left join `tabTask` t on t.name = l.task
 		where l.user = %s and l.log_date = %s

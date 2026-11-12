@@ -3,13 +3,13 @@ import io
 
 import frappe
 from frappe import _
-from frappe.utils import cint, get_fullname, getdate, today
+from frappe.utils import get_fullname, getdate
 
+from aeraspace import timesheets
 from aeraspace.api.project import check_project_member
 from aeraspace.team import team_scope
 from aeraspace.utils import require_login
 
-LOG_FIELDS = ["name", "user", "log_date", "project", "task", "minutes", "description", "creation"]
 GROUPS = {
 	"project": ("l.project", "p.project_name"),
 	"employee": ("l.user", "u.full_name"),
@@ -36,60 +36,37 @@ def log_time(
 ):
 	user = require_login()
 	check_project_member(project)
-	doc = frappe.get_doc(
-		{
-			"doctype": "AS Time Log",
-			"user": user,
-			"project": project,
-			"task": task or None,
-			"minutes": cint(minutes),
-			"log_date": getdate(log_date or today()),
-			"description": description,
-		}
-	).insert(ignore_permissions=True)
-	return _row(doc.as_dict())
+	name = timesheets.add_entry(user, project, minutes, log_date, task, description)
+	return _row(timesheets.get_entry(name))
 
 
 @frappe.whitelist(methods=["POST"])
 def update_log(name: str, **values):
-	doc = _own_log(name)
+	user = require_login()
 	allowed = {
 		k: v for k, v in values.items() if k in ("project", "task", "minutes", "log_date", "description")
 	}
 	if "project" in allowed:
 		check_project_member(allowed["project"])
-	if "minutes" in allowed:
-		allowed["minutes"] = cint(allowed["minutes"])
-	if "task" in allowed:
-		allowed["task"] = allowed["task"] or None
-	doc.update(allowed)
-	doc.save(ignore_permissions=True)
-	return _row(doc.as_dict())
+	return _row(timesheets.get_entry(timesheets.update_entry(name, user, allowed)))
 
 
 @frappe.whitelist(methods=["POST"])
 def delete_log(name: str):
-	frappe.delete_doc("AS Time Log", _own_log(name).name, ignore_permissions=True)
-
-
-def _own_log(name):
-	doc = frappe.get_doc("AS Time Log", name)
-	if doc.user != require_login():
-		frappe.throw(_("You can only change your own time entries"), frappe.PermissionError)
-	return doc
+	timesheets.delete_entry(name, require_login())
 
 
 @frappe.whitelist()
 def get_my_logs(from_date: str, to_date: str):
 	user = require_login()
 	rows = frappe.db.sql(
-		"""select l.name, l.user, l.log_date, l.project, p.project_name, l.task, t.subject as task_title,
+		f"""select l.name, l.user, l.log_date, l.project, p.project_name, l.task, t.subject as task_title,
 			l.minutes, l.description, l.creation
-		from `tabAS Time Log` l
+		from {timesheets.ENTRIES} l
 		join `tabProject` p on p.name = l.project
 		left join `tabTask` t on t.name = l.task
 		where l.user = %(user)s and l.log_date between %(from)s and %(to)s
-		order by l.log_date desc, l.creation desc""",
+		order by l.log_date desc, l.from_time desc""",
 		{"user": user, "from": getdate(from_date), "to": getdate(to_date)},
 		as_dict=True,
 	)
@@ -127,7 +104,7 @@ def _report_rows(viewer, from_date, to_date, project=None, user=None):
 		f"""select l.name, l.user, u.full_name, l.log_date, l.project, p.project_name,
 			coalesce(nullif(p.as_client, ''), '(No client)') as client,
 			l.task, t.subject as task_title, l.minutes, l.description
-		from `tabAS Time Log` l
+		from {timesheets.ENTRIES} l
 		join `tabProject` p on p.name = l.project
 		join `tabUser` u on u.name = l.user
 		left join `tabTask` t on t.name = l.task

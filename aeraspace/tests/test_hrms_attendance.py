@@ -210,3 +210,28 @@ class TestAttendance(IntegrationTestCase):
 		self.assertEqual(record.status, "Present")
 		self.assertEqual(record.working_hours, 8)
 		self.assertFalse(record.late_entry)
+
+	def test_history_gives_each_day_a_status(self):
+		# a past Monday..Sunday week
+		monday = add_days(today(), -14 - getdate(today()).weekday())
+		self.step("check_in", "09:00", monday)
+		self.step("start_break", "13:00", monday)
+		self.step("end_break", "13:30", monday)
+		self.step("check_out", "18:00", monday)
+		self.step("check_in", "09:00", add_days(monday, 1))
+		self.step("check_out", "12:00", add_days(monday, 1))  # 3h: half day
+		self.step("check_in", "09:30", add_days(monday, 3))  # never checked out
+
+		with self.set_user(CLOCK):
+			days = attendance.get_history(monday, add_days(monday, 6))["days"]
+		statuses = [d["status"] for d in days]
+		self.assertEqual(statuses[:4], ["Present", "Half Day", "Absent", "Missed Check-out"])
+		self.assertEqual(statuses[6], "Weekly Off")
+		self.assertEqual(days[0]["worked_seconds"], (8 * 60 + 30) * 60)
+		self.assertEqual(days[0]["break_seconds"], 30 * 60)
+		self.assertEqual(days[3]["late_seconds"], 30 * 60)
+
+		with self.set_user(MEMBER):  # not CLOCK's manager
+			self.assertRaises(frappe.PermissionError, attendance.get_history, monday, monday, CLOCK)
+		with self.set_user(CLOCK):
+			self.assertRaises(frappe.ValidationError, attendance.get_history, add_days(monday, -90), monday)

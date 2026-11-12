@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, get_fullname, getdate
 
+from aeraspace import timesheets
 from aeraspace.api.project import check_project_member, check_project_read
 from aeraspace.notifications import mentioned_users, plain_preview, push
 from aeraspace.projects import TASK_COLUMNS, TASK_SELECT, TASK_STATUSES, next_task_name, to_columns
@@ -124,9 +125,7 @@ def get_task(task: str):
 			order_by="creation asc",
 		)
 	]
-	payload.logged_minutes = frappe.db.sql(
-		"select coalesce(sum(minutes), 0) from `tabAS Time Log` where task = %s", task
-	)[0][0]
+	payload.logged_minutes = timesheets.logged_minutes_on_task(task)
 	if row.source_message:
 		source = frappe.db.get_value(
 			"AS Message", row.source_message, ["channel", "thread_root"], as_dict=True
