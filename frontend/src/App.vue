@@ -25,6 +25,10 @@
 			</div>
 		</div>
 		<ProfileDrawer v-if="session.isLoggedIn" />
+		<template v-if="session.isLoggedIn">
+			<IncomingCall />
+			<CallWindow />
+		</template>
 	</FrappeUIProvider>
 </template>
 
@@ -34,19 +38,24 @@ import { FrappeUIProvider, Tooltip } from "frappe-ui";
 import AppSidebar from "@/components/AppSidebar.vue";
 import TopBar from "@/components/TopBar.vue";
 import ProfileDrawer from "@/components/ProfileDrawer.vue";
+import IncomingCall from "@/components/IncomingCall.vue";
+import CallWindow from "@/components/CallWindow.vue";
 import { showError, useChat } from "@/stores/chat";
 import { useAttendance } from "@/stores/attendance";
+import { useCall } from "@/stores/call";
 import { sidebarCollapsed } from "@/layout";
 import { session } from "@/session";
 import LucideChevronRight from "~icons/lucide/chevron-right";
 
 const chat = useChat();
 const attendance = useAttendance();
+const calls = useCall();
 const topBar = ref(null);
 onMounted(async () => {
 	if (!session.isLoggedIn) return;
 	await chat.init().catch(showError);
 	attendance.init().catch(showError);
+	calls.init();
 });
 
 function showSidebar() {

@@ -23,6 +23,9 @@ class TestEodAndTimesheets(IntegrationTestCase):
 	def setUp(self):
 		frappe.db.delete("AS Daily Update", {"user": ("in", USERS)})
 		frappe.db.delete("AS Notification", {"user": ("in", USERS)})
+		sheets = frappe.get_all("Timesheet", filters={"user": ("in", USERS)}, pluck="name")
+		frappe.db.delete("Timesheet Detail", {"parent": ("in", sheets or [""])})
+		frappe.db.delete("Timesheet", {"name": ("in", sheets or [""])})
 
 	def project(self):
 		suffix = frappe.generate_hash(length=4).upper()
@@ -157,3 +160,69 @@ class TestEodAndTimesheets(IntegrationTestCase):
 			self.assertEqual(timesheet.get_report(today(), today(), project=name)["total_minutes"], 0)
 		with self.set_user(self.dev):  # sees only their own
 			self.assertEqual(timesheet.get_report(today(), today(), project=name)["total_minutes"], 120)
+
+	# ---- stored as ERPNext Timesheets -------------------------------------
+
+	def sheets(self, user):
+		return frappe.get_all(
+			"Timesheet",
+			filters={"user": user, "docstatus": ("<", 2)},
+			fields=["name", "docstatus", "start_date", "total_hours"],
+			order_by="creation",
+		)
+
+	def test_entries_are_rows_of_one_daily_timesheet(self):
+		name = self.project()
+		with self.set_user(self.manager):
+			task = task_api.create_task(name, "Sync job")
+		with self.set_user(self.dev):
+			first = timesheet.log_time(name, 90, task=task.name, description="Fix")
+			second = timesheet.log_time(name, 30)
+		sheets = self.sheets(self.dev)
+		self.assertEqual(len(sheets), 1)
+		self.assertEqual(sheets[0].total_hours, 2)
+		rows = frappe.get_doc("Timesheet", sheets[0].name).time_logs
+		self.assertEqual([r.name for r in rows], [first["name"], second["name"]])
+		self.assertEqual(get_datetime(rows[0].from_time).strftime("%H:%M"), "09:00")
+		self.assertEqual(rows[1].from_time, rows[0].to_time)  # laid out back to back
+		self.assertEqual(first["minutes"], 90)
+		self.assertEqual(frappe.db.get_value("Task", task.name, "as_status"), "Todo")  # board untouched
+
+	def test_edit_move_and_delete_entries(self):
+		name = self.project()
+		yesterday = add_days(today(), -1)
+		with self.set_user(self.dev):
+			first = timesheet.log_time(name, 60)
+			second = timesheet.log_time(name, 30)
+			edited = timesheet.update_log(first["name"], minutes=120, description="Longer")
+			self.assertEqual((edited["minutes"], edited["description"]), (120, "Longer"))
+			row = frappe.db.get_value("Timesheet Detail", second["name"], ["from_time"], as_dict=True)
+			self.assertEqual(get_datetime(row.from_time).strftime("%H:%M"), "11:00")  # re-laid after edit
+
+			moved = timesheet.update_log(second["name"], log_date=yesterday)
+			self.assertEqual(moved["log_date"], str(yesterday))
+			self.assertEqual(len(self.sheets(self.dev)), 2)
+
+			timesheet.delete_log(moved["name"])  # last entry of yesterday: its sheet goes too
+			self.assertEqual([s.start_date for s in self.sheets(self.dev)], [frappe.utils.getdate(today())])
+			self.assertEqual(len(timesheet.get_my_logs(yesterday, today())), 1)
+		with self.set_user(self.manager):
+			self.assertRaises(frappe.PermissionError, timesheet.update_log, first["name"], minutes=10)
+
+	def test_day_limit_and_submitted_sheets(self):
+		name = self.project()
+		with self.set_user(self.dev):
+			entry = timesheet.log_time(name, 23 * 60)
+			self.assertRaises(frappe.ValidationError, timesheet.log_time, name, 61)
+
+		sheet = frappe.get_doc("Timesheet", self.sheets(self.dev)[0].name)
+		sheet.time_logs[0].activity_type = "Execution"
+		sheet.flags.ignore_permissions = True
+		sheet.submit()
+
+		with self.set_user(self.dev):
+			self.assertRaises(frappe.ValidationError, timesheet.update_log, entry["name"], minutes=60)
+			later = timesheet.log_time(name, 30)  # goes to a new draft, after the submitted time
+		row = frappe.db.get_value("Timesheet Detail", later["name"], ["parent", "from_time"], as_dict=True)
+		self.assertNotEqual(row.parent, sheet.name)
+		self.assertEqual(get_datetime(row.from_time), get_datetime(sheet.time_logs[0].to_time))

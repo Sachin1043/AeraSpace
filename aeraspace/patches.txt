@@ -5,3 +5,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 aeraspace.patches.v2.move_projects_tasks_to_erpnext
+aeraspace.patches.v2.move_time_logs_to_timesheets

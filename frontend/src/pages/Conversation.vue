@@ -37,6 +37,33 @@
 							</div>
 						</div>
 					</template>
+					<template v-if="details.is_member">
+						<button
+							v-if="runningCall && calls.active?.name !== runningCall.name"
+							class="header-btn join-call"
+							title="Join the call"
+							@click="calls.join(runningCall)"
+						>
+							<LucidePhone class="size-4" /> Join call
+							<span>{{ runningCall.participants.length }}</span>
+						</button>
+						<template v-else-if="!runningCall">
+							<button
+								class="header-btn"
+								title="Audio call"
+								@click="startCall('Audio')"
+							>
+								<LucidePhone class="size-4" />
+							</button>
+							<button
+								class="header-btn"
+								title="Video call"
+								@click="startCall('Video')"
+							>
+								<LucideVideo class="size-4" />
+							</button>
+						</template>
+					</template>
 					<button
 						v-if="details.project"
 						class="header-btn"
@@ -246,8 +273,9 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Button, Dialog, Dropdown, LoadingIndicator, call } from "frappe-ui";
+import { Button, Dialog, Dropdown, LoadingIndicator, call, toast } from "frappe-ui";
 import { showError, useChat } from "@/stores/chat";
+import { useCall } from "@/stores/call";
 import { session } from "@/session";
 import MessageList from "@/components/MessageList.vue";
 import Composer from "@/components/Composer.vue";
@@ -266,9 +294,12 @@ import LucideUserPlus from "~icons/lucide/user-plus";
 import LucideEllipsis from "~icons/lucide/ellipsis";
 import LucidePin from "~icons/lucide/pin";
 import LucideFolderOpen from "~icons/lucide/folder-open";
+import LucidePhone from "~icons/lucide/phone";
+import LucideVideo from "~icons/lucide/video";
 
 const props = defineProps({ channel: { type: String, required: true } });
 const chat = useChat();
+const calls = useCall();
 const route = useRoute();
 const router = useRouter();
 
@@ -382,6 +413,19 @@ const menu = computed(() => {
 async function loadDetails() {
 	details.value = await call("aeraspace.api.chat.get_channel", { channel: props.channel });
 	chat.setReadMarks(props.channel, details.value.members);
+	if (details.value.is_member) calls.loadActive(props.channel);
+}
+
+const runningCall = computed(() => calls.activeCalls[props.channel] || null);
+
+function startCall(callType) {
+	if (details.value.channel_type !== "Direct" && details.value.members.length > 6) {
+		toast.create({
+			message: "Calls work best with up to 6 people; only the first 6 can join.",
+			type: "info",
+		});
+	}
+	calls.start(props.channel, callType);
 }
 
 // everyone else in the conversation, with how far they've read (kept live by as_read events)
@@ -511,6 +555,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.header-btn.join-call {
+	background-color: #16a34a;
+	color: #fff;
+}
+.header-btn.join-call:hover {
+	background-color: #15803d;
+	color: #fff;
+}
 .header-btn {
 	display: flex;
 	align-items: center;
