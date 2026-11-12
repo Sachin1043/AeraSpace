@@ -552,6 +552,8 @@ export const useChat = defineStore("chat", () => {
 	function notificationTitle(n) {
 		if (n.notification_type === "Reminder") return `⏰ ${n.preview}`;
 		if (n.notification_type === "Password Reset") return `🔑 ${n.preview}`;
+		if (n.notification_type === "Request")
+			return `📝 ${person(n.from_user).full_name} ${n.preview}`;
 		const from = person(n.from_user).full_name;
 		const entry = sidebarEntry(n.channel);
 		const where =
@@ -575,6 +577,12 @@ export const useChat = defineStore("chat", () => {
 
 	function notificationRoute(n) {
 		if (n.notification_type === "Reminder") return { name: "EOD" };
+		// to an approver it's something to decide; to the requester, news about their own request
+		if (n.notification_type === "Request")
+			return {
+				name: "Requests",
+				query: /^(requested|cancelled)/.test(n.preview || "") ? { tab: "approvals" } : {},
+			};
 		if (n.notification_type === "Password Reset")
 			return { name: "AdminUsers", query: { tab: "requests" } };
 		if (n.task)

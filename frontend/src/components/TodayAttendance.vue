@@ -30,7 +30,15 @@
 			v-if="attendance.data.missed_checkout"
 			class="mt-3 rounded bg-surface-amber-1 px-3 py-2 text-sm text-ink-amber-3"
 		>
-			You didn't check out on {{ attendance.data.missed_checkout }}. Ask HR to correct it.
+			You didn't check out on {{ attendance.data.missed_checkout }}.
+			<router-link
+				:to="{
+					name: 'Requests',
+					query: { new: 'correction', date: attendance.data.missed_checkout },
+				}"
+				class="font-medium underline"
+				>Request a correction</router-link
+			>
 		</div>
 
 		<dl class="mt-4 grid grid-cols-3 gap-y-4 sm:grid-cols-6">

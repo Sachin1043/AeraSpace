@@ -43,6 +43,7 @@ import CallWindow from "@/components/CallWindow.vue";
 import { showError, useChat } from "@/stores/chat";
 import { useAttendance } from "@/stores/attendance";
 import { useCall } from "@/stores/call";
+import { useRequests } from "@/stores/requests";
 import { sidebarCollapsed } from "@/layout";
 import { session } from "@/session";
 import LucideChevronRight from "~icons/lucide/chevron-right";
@@ -50,12 +51,14 @@ import LucideChevronRight from "~icons/lucide/chevron-right";
 const chat = useChat();
 const attendance = useAttendance();
 const calls = useCall();
+const requests = useRequests();
 const topBar = ref(null);
 onMounted(async () => {
 	if (!session.isLoggedIn) return;
 	await chat.init().catch(showError);
 	attendance.init().catch(showError);
 	calls.init();
+	requests.init();
 });
 
 function showSidebar() {
