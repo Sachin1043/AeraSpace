@@ -397,7 +397,11 @@ const menu = computed(() => {
 			onClick: () => chat.setChannelNotify(props.channel, level),
 		})),
 	};
-	if (details.value.channel_type === "Direct") return [notifyGroup];
+	const meetingGroup = {
+		group: "Meeting",
+		items: [{ label: "Schedule a meeting", icon: "calendar", onClick: scheduleMeeting }],
+	};
+	if (details.value.channel_type === "Direct") return [meetingGroup, notifyGroup];
 	return [
 		{
 			group: "Channel",
@@ -406,6 +410,7 @@ const menu = computed(() => {
 				{ label: "Leave", icon: "log-out", onClick: leave },
 			],
 		},
+		meetingGroup,
 		notifyGroup,
 	];
 });
@@ -417,6 +422,17 @@ async function loadDetails() {
 }
 
 const runningCall = computed(() => calls.activeCalls[props.channel] || null);
+
+// a direct chat or group invites its people; a channel invites the whole channel
+function scheduleMeeting() {
+	const query = { new: 1 };
+	if (["Direct", "Group"].includes(details.value.channel_type)) {
+		query.users = memberUsers.value.filter((u) => u !== session.user).join(",");
+	} else {
+		query.channel = props.channel;
+	}
+	router.push({ name: "Meetings", query });
+}
 
 function startCall(callType) {
 	if (details.value.channel_type !== "Direct" && details.value.members.length > 6) {

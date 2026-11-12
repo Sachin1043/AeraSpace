@@ -128,6 +128,7 @@ import LucideClipboardCheck from "~icons/lucide/clipboard-check";
 import LucideTimer from "~icons/lucide/timer";
 import LucideCalendarCheck from "~icons/lucide/calendar-check";
 import LucideUsersRound from "~icons/lucide/users-round";
+import LucideCalendarClock from "~icons/lucide/calendar-clock";
 import { useRequests } from "@/stores/requests";
 import LucideBell from "~icons/lucide/bell";
 
@@ -153,6 +154,7 @@ const navItems = [
 	{ label: "Tasks", route: "/tasks", icon: LucideListTodo },
 	{ label: "EOD", route: "/eod", icon: LucideClipboardCheck },
 	{ label: "Timesheets", route: "/timesheets", icon: LucideTimer },
+	{ label: "Meetings", route: "/meetings", icon: LucideCalendarClock },
 	{
 		label: "Team",
 		route: "/team",
