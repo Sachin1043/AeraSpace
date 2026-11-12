@@ -4,7 +4,7 @@
 		<div class="flex-1 overflow-y-auto px-2 pb-4 pt-2">
 			<nav class="space-y-0.5">
 				<router-link
-					v-for="item in navItems"
+					v-for="item in navItems.filter((i) => !i.show || i.show())"
 					:key="item.route"
 					:to="item.route"
 					class="flex items-center gap-2 rounded px-2 py-1.5 text-base text-ink-gray-7 hover:bg-surface-gray-3"
@@ -127,6 +127,7 @@ import LucideListTodo from "~icons/lucide/list-todo";
 import LucideClipboardCheck from "~icons/lucide/clipboard-check";
 import LucideTimer from "~icons/lucide/timer";
 import LucideCalendarCheck from "~icons/lucide/calendar-check";
+import LucideUsersRound from "~icons/lucide/users-round";
 import { useRequests } from "@/stores/requests";
 import LucideBell from "~icons/lucide/bell";
 
@@ -152,6 +153,12 @@ const navItems = [
 	{ label: "Tasks", route: "/tasks", icon: LucideListTodo },
 	{ label: "EOD", route: "/eod", icon: LucideClipboardCheck },
 	{ label: "Timesheets", route: "/timesheets", icon: LucideTimer },
+	{
+		label: "Team",
+		route: "/team",
+		icon: LucideUsersRound,
+		show: () => requests.options.can_approve,
+	},
 	{
 		label: "Requests",
 		route: "/requests",

@@ -16,11 +16,14 @@
 import { computed } from "vue";
 import { useAttendance } from "@/stores/attendance";
 import { formatHours } from "@/utils/clock";
+import { runningTotals } from "@/utils/attendanceStatus";
+import { now } from "@/utils/now";
 
-// one day's numbers; today's worked/break keep ticking from the attendance store
+// one day's numbers; today's worked/break keep ticking (from the attendance store for my own day)
 const props = defineProps({
 	day: { type: Object, required: true },
 	isToday: { type: Boolean, default: false },
+	mine: { type: Boolean, default: true },
 });
 
 const attendance = useAttendance();
@@ -28,8 +31,17 @@ const attendance = useAttendance();
 const stats = computed(() => {
 	const d = props.day;
 	const hasTime = !!d.first_in;
-	const worked = props.isToday ? attendance.workedSeconds : d.worked_seconds;
-	const breaks = props.isToday ? attendance.breakSeconds : d.break_seconds;
+	const live = props.isToday && !props.mine ? runningTotals(d, now.value) : null;
+	const worked = !props.isToday
+		? d.worked_seconds
+		: props.mine
+		? attendance.workedSeconds
+		: live.worked;
+	const breaks = !props.isToday
+		? d.break_seconds
+		: props.mine
+		? attendance.breakSeconds
+		: live.breaks;
 	const short = Math.max(0, (d.expected_seconds || 0) - worked);
 	const dash = (value, format) => (hasTime ? format(value) : "—");
 	return [

@@ -15,7 +15,7 @@ from frappe.utils import add_days, date_diff, getdate, now_datetime
 
 from aeraspace import hr
 from aeraspace.api.hr_requests import approved_marks
-from aeraspace.team import can_view
+from aeraspace.team import can_view, watchers
 from aeraspace.utils import require_login
 
 FIELDS = ["name", "log_type", "as_reason", "time"]
@@ -125,6 +125,9 @@ def summarize(employee, day=None, events=None, shift=None):
 		"shift_start": str(shift[1].time()) if shift else None,
 		# still checked in (or on a break) at the end of the day's events
 		"open": bool(events) and _state_of(events[-1]) != "out",
+		# what the last event started and when, so others can keep the numbers running
+		"state": _state_of(events[-1]) if events else "out",
+		"since": str(events[-1].time) if events and _state_of(events[-1]) != "out" else None,
 	}
 
 
@@ -191,6 +194,8 @@ def _log(log_type, reason):
 	result = _state(user)
 	# keep every open tab of this person in sync
 	frappe.publish_realtime("as_attendance", result, user=user, after_commit=True)
+	for watcher in watchers(user):  # live team dashboards
+		frappe.publish_realtime("as_team_attendance", {"user": user}, user=watcher, after_commit=True)
 	return result
 
 
