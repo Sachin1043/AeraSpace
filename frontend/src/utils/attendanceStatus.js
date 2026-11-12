@@ -1,3 +1,5 @@
+import { dayjs } from "frappe-ui";
+
 // colours for each day's attendance status (Last 7 days list and calendar)
 export const STATUS_STYLES = {
 	Present: { badge: "bg-surface-green-2 text-ink-green-3", dot: "bg-green-500" },
@@ -15,4 +17,17 @@ export const STATUS_STYLES = {
 
 export function statusStyle(status) {
 	return STATUS_STYLES[status] || STATUS_STYLES.Upcoming;
+}
+
+// worked / break seconds for a day summary, counting the time still running since its last event
+export function runningTotals(day, nowMs) {
+	let worked = day.worked_seconds || 0;
+	let breaks = day.break_seconds || 0;
+	if (day.since) {
+		const since = dayjs.tz(day.since, window.system_timezone).valueOf();
+		const running = Math.max(0, (nowMs - since) / 1000);
+		if (day.state === "working") worked += running;
+		else if (day.state === "break") breaks += running;
+	}
+	return { worked, breaks };
 }

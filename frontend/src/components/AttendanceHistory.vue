@@ -1,5 +1,8 @@
 <template>
-	<Dialog v-model="open" :options="{ title: 'My attendance', size: '4xl' }">
+	<Dialog
+		v-model="open"
+		:options="{ title: mine ? 'My attendance' : `${fullName}'s attendance`, size: '4xl' }"
+	>
 		<template #body-content>
 			<!-- tabs -->
 			<div class="mb-4 inline-flex rounded-lg bg-surface-gray-2 p-0.5">
@@ -36,6 +39,7 @@
 						class="mt-3"
 						:day="day"
 						:is-today="day.date === todayDate"
+						:mine="mine"
 					/>
 				</div>
 			</div>
@@ -114,6 +118,7 @@
 						class="mt-3"
 						:day="selectedDay"
 						:is-today="selectedDay.date === todayDate"
+						:mine="mine"
 					/>
 					<p v-else class="mt-2 text-sm text-ink-gray-5">{{ emptyText(selectedDay) }}</p>
 				</div>
@@ -126,6 +131,9 @@
 import { computed, defineComponent, h, ref, watch } from "vue";
 import { Button, Dialog, LoadingIndicator, createResource, dayjs } from "frappe-ui";
 import { useAttendance } from "@/stores/attendance";
+import { session } from "@/session";
+import { runningTotals } from "@/utils/attendanceStatus";
+import { now } from "@/utils/now";
 import { formatHours } from "@/utils/clock";
 import { statusStyle } from "@/utils/attendanceStatus";
 import DayAttendanceStats from "./DayAttendanceStats.vue";
@@ -134,7 +142,12 @@ import LucideCalendar from "~icons/lucide/calendar-days";
 import LucideChevronLeft from "~icons/lucide/chevron-left";
 import LucideChevronRight from "~icons/lucide/chevron-right";
 
+const props = defineProps({
+	user: { type: String, default: null }, // someone on my team; default is me
+	fullName: { type: String, default: "" },
+});
 const open = defineModel({ type: Boolean, default: false });
+const mine = computed(() => !props.user || props.user === session.user);
 const attendance = useAttendance();
 
 const tabs = [
@@ -160,11 +173,7 @@ const leadingBlanks = computed(() => (month.value.day() + 6) % 7);
 const summary = computed(() => {
 	const days = monthDays.value;
 	const count = (statuses) => days.filter((d) => statuses.includes(d.status)).length;
-	const worked = days.reduce(
-		(sum, d) =>
-			sum + (d.date === todayDate.value ? attendance.workedSeconds : d.worked_seconds),
-		0
-	);
+	const worked = days.reduce((sum, d) => sum + workedOn(d), 0);
 	return [
 		`Present ${count(["Present", "Missed Check-out", "Work From Home"])}`,
 		`Half day ${count(["Half Day"])}`,
@@ -174,15 +183,21 @@ const summary = computed(() => {
 	];
 });
 
+// today keeps ticking: my own from the attendance store, a teammate's from their last check-in
+function workedOn(day) {
+	if (day.date !== todayDate.value) return day.worked_seconds;
+	return mine.value ? attendance.workedSeconds : runningTotals(day, now.value).worked;
+}
+
 function loadWeek() {
 	const end = dayjs();
-	week.submit({ from_date: fmt(end.subtract(6, "day")), to_date: fmt(end) });
+	week.submit({ from_date: fmt(end.subtract(6, "day")), to_date: fmt(end), user: props.user });
 }
 
 function loadMonth() {
 	const start = month.value;
 	const end = start.endOf("month");
-	monthData.submit({ from_date: fmt(start), to_date: fmt(end) });
+	monthData.submit({ from_date: fmt(start), to_date: fmt(end), user: props.user });
 	const today = dayjs();
 	selected.value = today.isSame(start, "month") ? fmt(today) : fmt(start);
 }
@@ -193,7 +208,7 @@ function shiftMonth(step) {
 }
 
 function cellLabel(day) {
-	const worked = day.date === todayDate.value ? attendance.workedSeconds : day.worked_seconds;
+	const worked = workedOn(day);
 	if (day.first_in) return formatHours(worked);
 	if (day.status === "Weekly Off") return "Off";
 	if (["Holiday", "Absent", "On Leave"].includes(day.status)) return day.holiday || day.status;
@@ -207,7 +222,7 @@ function emptyText(day) {
 			"Weekly Off": "Weekly off.",
 			Holiday: `Holiday${day.holiday ? ` · ${day.holiday}` : ""}.`,
 			Upcoming: "This day hasn't come yet.",
-			"Not Checked In": "You haven't checked in today.",
+			"Not Checked In": mine.value ? "You haven't checked in today." : "Not checked in yet.",
 			"Not Joined": "Before your joining date.",
 			"On Leave": "On leave.",
 		}[day.status] || "No check-ins."
