@@ -303,5 +303,8 @@ scheduler_events = {
 		"*/15 * * * *": ["aeraspace.tasks.eod_reminders"],
 		"* * * * *": ["aeraspace.api.meeting.send_reminders"],
 	},
-	"daily": ["aeraspace.api.hr_requests.submit_due_attendance_requests"],
+	"daily": [
+		"aeraspace.api.hr_requests.submit_due_attendance_requests",
+		"aeraspace.hr_rules.run_daily",
+	],
 }

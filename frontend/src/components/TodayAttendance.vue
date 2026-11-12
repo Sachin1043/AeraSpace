@@ -30,7 +30,9 @@
 			v-if="attendance.data.missed_checkout"
 			class="mt-3 rounded bg-surface-amber-1 px-3 py-2 text-sm text-ink-amber-3"
 		>
-			You didn't check out on {{ attendance.data.missed_checkout }}.
+			You didn't check out on
+			{{ dayjs(attendance.data.missed_checkout).format("ddd, D MMM") }}, so it was counted
+			until 6 PM. Worked longer?
 			<router-link
 				:to="{
 					name: 'Requests',
@@ -41,11 +43,17 @@
 			>
 		</div>
 
-		<dl class="mt-4 grid grid-cols-3 gap-y-4 sm:grid-cols-6">
+		<dl
+			class="mt-4 grid grid-cols-3 gap-y-4"
+			:class="stats.length > 6 ? 'sm:grid-cols-7' : 'sm:grid-cols-6'"
+		>
 			<div v-for="stat in stats" :key="stat.label">
 				<dt class="text-2xs uppercase tracking-wide text-ink-gray-5">{{ stat.label }}</dt>
 				<dd class="mt-1 text-base font-medium tabular-nums" :class="stat.class">
 					{{ stat.value }}
+				</dd>
+				<dd v-if="stat.hint" class="text-2xs" :class="stat.hintClass || 'text-ink-gray-5'">
+					{{ stat.hint }}
 				</dd>
 			</div>
 		</dl>
@@ -65,7 +73,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
-import { Button } from "frappe-ui";
+import { Button, dayjs } from "frappe-ui";
 import { useAttendance } from "@/stores/attendance";
 import { formatHours } from "@/utils/clock";
 import AttendanceHistory from "./AttendanceHistory.vue";
@@ -95,6 +103,25 @@ const stats = computed(() => [
 		label: "Late",
 		value: today.value.late_seconds ? formatHours(today.value.late_seconds) : "—",
 		class: today.value.late_seconds ? "text-ink-red-4" : "text-ink-gray-9",
+		...lateHint.value,
 	},
+	...(overtime.value
+		? [{ label: "Overtime", value: formatHours(overtime.value), class: "text-ink-blue-3" }]
+		: []),
 ]);
+
+// every 3rd late day of a month counts as a half day
+const lateHint = computed(() => {
+	const count = attendance.data.late_this_month || 0;
+	const every = attendance.data.late_days_per_half_day || 3;
+	if (!count) return {};
+	const left = every - (count % every);
+	return {
+		hint: left === 1 ? `${count} late · next one is a half day` : `${count} late this month`,
+		hintClass: left === 1 ? "text-ink-amber-3" : "text-ink-gray-5",
+	};
+});
+const overtime = computed(() =>
+	Math.max(0, attendance.workedSeconds - (attendance.data.overtime_after_seconds || 9 * 3600))
+);
 </script>

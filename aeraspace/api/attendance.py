@@ -13,12 +13,12 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, date_diff, getdate, now_datetime
 
-from aeraspace import hr
+from aeraspace import hr, hr_rules
 from aeraspace.api.hr_requests import approved_marks
 from aeraspace.team import can_view, watchers
 from aeraspace.utils import require_login
 
-FIELDS = ["name", "log_type", "as_reason", "time"]
+FIELDS = ["name", "log_type", "as_reason", "as_source", "time"]
 
 
 def _state_of(event) -> str:
@@ -128,6 +128,9 @@ def summarize(employee, day=None, events=None, shift=None):
 		# what the last event started and when, so others can keep the numbers running
 		"state": _state_of(events[-1]) if events else "out",
 		"since": str(events[-1].time) if events and _state_of(events[-1]) != "out" else None,
+		# forgot to check out: closed automatically at shift end (hr_rules.close_open_sessions)
+		"auto_checkout": bool(events) and events[-1].log_type == "OUT" and events[-1].as_source == "Auto",
+		"overtime_seconds": hr_rules.overtime(worked),
 	}
 
 
@@ -137,15 +140,35 @@ def _state(user):
 		return {"enabled": False}
 	now = now_datetime()
 	state, event = _current(employee, now)
-	missed = event and state == "out" and _state_of(event) != "out"
 	return {
 		"enabled": True,
 		"state": state,
 		"since": str(event.time) if event and state != "out" else None,
-		"missed_checkout": str(getdate(event.time)) if missed else None,
+		"missed_checkout": _missed_checkout(employee, now),
 		"server_now": str(now),  # lets the browser correct for clock differences
 		"today": summarize(employee, getdate(now)),
+		"late_this_month": hr_rules.late_this_month(employee),
+		"late_days_per_half_day": hr_rules.LATE_DAYS_PER_HALF_DAY,
+		"overtime_after_seconds": hr_rules.OVERTIME_AFTER_SECONDS,
 	}
+
+
+def _missed_checkout(employee, now) -> str | None:
+	"""The last working day before today, if it ended without a check-out (still open, or closed
+	automatically) in the past week, so the person can ask for a correction."""
+	today_start = datetime.combine(getdate(now), datetime.min.time())
+	last = frappe.db.get_value(
+		"Employee Checkin",
+		{"employee": employee, "time": ("between", (today_start - timedelta(days=7), today_start))},
+		FIELDS,
+		as_dict=True,
+		order_by="time desc, creation desc",
+	)
+	if not last:
+		return None
+	open_session = _state_of(last) != "out"
+	auto_closed = last.log_type == "OUT" and last.as_source == "Auto"
+	return str(getdate(last.time)) if open_session or auto_closed else None
 
 
 def _log(log_type, reason):
@@ -156,6 +179,8 @@ def _log(log_type, reason):
 		frappe.throw(_("You don't have an employee record yet. Please ask HR."))
 
 	now = now_datetime()
+	if (log_type, reason) == ("IN", "Work"):
+		hr_rules.close_open_sessions(employee)  # forgot to check out yesterday
 	state, _event = _current(employee, now)
 	target = {("IN", "Work"): "working", ("IN", "Break"): "working", ("OUT", "Break"): "break"}.get(
 		(log_type, reason), "out"
@@ -257,6 +282,7 @@ def get_history(from_date: str, to_date: str, user: str | None = None):
 		holiday = holidays.get(day)
 		summary["holiday"] = holiday.description if holiday else None
 		summary["status"] = _status(summary, day, today, joined, holiday, marks.get(day), row)
+		summary["late_penalty"] = marks.get(day) == "Late Penalty"
 		days.append(summary)
 	return {"employee": employee, "today": str(today), "days": days}
 
@@ -265,7 +291,7 @@ def _status(summary, day, today, joined, holiday, mark, shift):
 	"""`mark` comes from approved requests (or HRMS attendance): leave, WFH, a corrected day."""
 	if mark in ("On Leave", "Work From Home"):
 		return mark
-	if mark == "Half Day Leave":
+	if mark in ("Half Day Leave", "Late Penalty"):
 		return "Half Day"
 	if day > today:
 		return "Holiday" if holiday and not holiday.weekly_off else "Weekly Off" if holiday else "Upcoming"
@@ -319,6 +345,6 @@ def _hrms_attendance(employee, from_date, to_date):
 	rows = frappe.get_all(
 		"Attendance",
 		filters={"employee": employee, "docstatus": 1, "attendance_date": ("between", (from_date, to_date))},
-		fields=["attendance_date", "status"],
+		fields=["attendance_date", "status", "as_late_penalty"],
 	)
-	return {getdate(r.attendance_date): r.status for r in rows}
+	return {getdate(r.attendance_date): "Late Penalty" if r.as_late_penalty else r.status for r in rows}

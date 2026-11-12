@@ -14,7 +14,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, date_diff, formatdate, get_fullname, getdate, today
 
-from aeraspace import hr
+from aeraspace import hr, hr_rules
 from aeraspace.notifications import push
 from aeraspace.permissions import is_admin
 from aeraspace.utils import require_login
@@ -190,15 +190,49 @@ def get_options():
 		as_dict=True,
 	)
 	approver = approver_for(user)
+	leave_types = [t for t in hr.LEAVE_TYPES if frappe.db.exists("Leave Type", t)]
 	return {
 		"enabled": bool(employee),
-		"leave_types": [t for t in hr.LEAVE_TYPES if frappe.db.exists("Leave Type", t)],
+		"leave_types": leave_types,
 		"taken_this_year": {r.leave_type: r.days for r in taken},
+		"balances": _balances(employee, leave_types) if employee else {},
+		"notice_days": hr_rules.NOTICE_DAYS,
 		"approver": approver,
 		"approver_name": get_fullname(approver),
 		"can_approve": is_admin(user) or bool(frappe.db.exists("AS Employee Profile", {"manager": user})),
 		"pending_approvals": _pending_count(user),
 	}
+
+
+def _balances(employee, leave_types) -> dict:
+	"""Days left of each paid leave type today (Leave Without Pay has no balance)."""
+	from hrms.hr.doctype.leave_application.leave_application import get_leave_balance_on
+
+	return {
+		t: get_leave_balance_on(employee, t, today(), consider_all_leaves_in_the_allocation_period=True)
+		for t in leave_types
+		if t in hr_rules.ANNUAL_LEAVE
+	}
+
+
+def _check_balance(employee, leave_type, from_date, to_date, half_day, half_day_date):
+	if leave_type not in hr_rules.ANNUAL_LEAVE:
+		return
+	from hrms.hr.doctype.leave_application.leave_application import (
+		get_leave_balance_on,
+		get_number_of_leave_days,
+	)
+
+	days = get_number_of_leave_days(employee, leave_type, from_date, to_date, half_day, half_day_date)
+	left = get_leave_balance_on(
+		employee, leave_type, from_date, to_date, consider_all_leaves_in_the_allocation_period=True
+	)
+	if days > left:
+		frappe.throw(
+			_(
+				"You have {0} day(s) of {1} left and this needs {2}. Apply {0} as {1} and the rest as Leave Without Pay."
+			).format(frappe.utils.flt(left, 1), leave_type, frappe.utils.flt(days, 1))
+		)
 
 
 def _pending_count(user) -> int:
@@ -267,6 +301,10 @@ def apply(
 	if kind == "leave":
 		if leave_type not in hr.LEAVE_TYPES:
 			frappe.throw(_("Please pick a leave type"))
+		notice = hr_rules.notice_error(leave_type, from_date)
+		if notice:
+			frappe.throw(notice)
+		_check_balance(employee, leave_type, from_date, to_date, half_day, half_day_date)
 		doc = frappe.get_doc(
 			{
 				"doctype": "Leave Application",

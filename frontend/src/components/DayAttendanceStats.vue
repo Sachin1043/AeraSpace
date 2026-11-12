@@ -1,5 +1,5 @@
 <template>
-	<dl class="grid grid-cols-3 gap-y-3 sm:grid-cols-7">
+	<dl class="grid grid-cols-3 gap-y-3 sm:grid-cols-8">
 		<div v-for="stat in stats" :key="stat.label">
 			<dt class="text-2xs uppercase tracking-wide text-ink-gray-5">{{ stat.label }}</dt>
 			<dd
@@ -18,6 +18,8 @@ import { useAttendance } from "@/stores/attendance";
 import { formatHours } from "@/utils/clock";
 import { runningTotals } from "@/utils/attendanceStatus";
 import { now } from "@/utils/now";
+
+const OVERTIME_AFTER_SECONDS = 9 * 3600;
 
 // one day's numbers; today's worked/break keep ticking (from the attendance store for my own day)
 const props = defineProps({
@@ -43,13 +45,16 @@ const stats = computed(() => {
 		? attendance.breakSeconds
 		: live.breaks;
 	const short = Math.max(0, (d.expected_seconds || 0) - worked);
+	const overtime = Math.max(0, worked - OVERTIME_AFTER_SECONDS);
 	const dash = (value, format) => (hasTime ? format(value) : "—");
 	return [
 		{ label: "Check-in", value: attendance.time(d.first_in) || "—" },
 		{
 			label: "Check-out",
-			value: attendance.time(d.last_out) || (d.open && !props.isToday ? "Missed" : "—"),
-			class: d.open && !props.isToday ? "text-ink-amber-3" : "",
+			value: d.auto_checkout
+				? `${attendance.time(d.last_out)} (auto)`
+				: attendance.time(d.last_out) || (d.open && !props.isToday ? "Missed" : "—"),
+			class: d.auto_checkout || (d.open && !props.isToday) ? "text-ink-amber-3" : "",
 		},
 		{ label: "Worked", value: dash(worked, formatHours) },
 		{ label: "Break", value: dash(breaks, formatHours) },
@@ -64,6 +69,9 @@ const stats = computed(() => {
 			value: d.late_seconds ? formatHours(d.late_seconds) : "—",
 			class: d.late_seconds ? "text-ink-red-4" : "",
 		},
+		...(overtime
+			? [{ label: "Overtime", value: formatHours(overtime), class: "text-ink-blue-3" }]
+			: []),
 	];
 });
 </script>

@@ -42,16 +42,18 @@
 		<!-- mine -->
 		<template v-if="tab === 'mine'">
 			<div
-				v-if="Object.keys(requests.options.taken_this_year).length"
+				v-if="Object.keys(requests.options.balances || {}).length"
 				class="mt-5 flex flex-wrap gap-2"
 			>
 				<span
-					v-for="(days, type) in requests.options.taken_this_year"
+					v-for="(left, type) in requests.options.balances"
 					:key="type"
 					class="rounded-md bg-surface-gray-2 px-2.5 py-1 text-sm text-ink-gray-7"
 				>
-					{{ type }}: <b class="font-medium text-ink-gray-9">{{ days }}</b> taken this
-					year
+					{{ type }}: <b class="font-medium text-ink-gray-9">{{ left }}</b> left
+					<template v-if="requests.options.taken_this_year[type]">
+						· {{ requests.options.taken_this_year[type] }} taken
+					</template>
 				</span>
 			</div>
 			<div v-if="mine.loading && !mine.data" class="flex justify-center py-10">

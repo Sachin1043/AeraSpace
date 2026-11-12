@@ -2,7 +2,7 @@ import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, getdate, today
 
-from aeraspace import hr
+from aeraspace import hr, hr_rules
 from aeraspace.api import attendance
 from aeraspace.api import hr_requests as requests_api
 from aeraspace.tests.test_chat import make_user
@@ -27,13 +27,19 @@ class TestHrRequests(IntegrationTestCase):
 		hr.ensure_hr_setup()
 		frappe.db.set_value("AS Employee Profile", EMPLOYEE, "manager", MANAGER)
 		cls.employee = hr.employee_for(EMPLOYEE)
-		frappe.db.set_value("Employee", cls.employee, "date_of_joining", add_days(today(), -120))
+		frappe.db.set_value("Employee", cls.employee, "date_of_joining", add_days(today(), -400))
+		# a fresh, full year of leave for the test employee
+		for doctype in ("Leave Ledger Entry", "Leave Allocation", "Leave Policy Assignment"):
+			frappe.db.delete(doctype, {"employee": cls.employee})
+		hr_rules.assign_leave_policy(cls.employee)
 
 	def setUp(self):
 		for doctype in ("Leave Application", "Attendance Request", "Attendance"):
 			for name in frappe.get_all(doctype, filters={"employee": self.employee}, pluck="name"):
 				frappe.db.delete(doctype, {"name": name})
-		frappe.db.delete("Leave Ledger Entry", {"employee": self.employee})
+		frappe.db.delete(
+			"Leave Ledger Entry", {"employee": self.employee, "transaction_type": "Leave Application"}
+		)
 		frappe.db.delete("AS Notification", {"user": ("in", (EMPLOYEE, MANAGER))})
 
 	def apply(self, kind, start, end=None, **kwargs):
